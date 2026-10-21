@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describeProfile, type Profile } from '@umwelt/profile';
-import { esc, renderPage } from '@umwelt/gen-service';
+import { defaultSkeleton, esc, renderPage } from '@umwelt/gen-service';
 import { readJsonl } from './jsonl.js';
 import type { GenerationRecord } from './records.js';
 import type { RunDir } from './run-dir.js';
@@ -32,7 +32,7 @@ export async function writeGallery(run: RunDir, profiles: Profile[]): Promise<st
     const items: string[] = [];
     for (const r of shuffle(group, rand)) {
       const id = `s${String(++n).padStart(4, '0')}`;
-      await writeFile(join(out, 'pages', `${id}.html`), renderPage(r.content!, { linkHref: () => '#' }));
+      await writeFile(join(out, 'pages', `${id}.html`), renderPage(r.content!, defaultSkeleton(new URL(r.url).hostname), { linkHref: () => '#' }));
       key.push([id, r.model, r.urlId, r.profileId].join(','));
       ratings.push([id, csvCell(r.url), r.profileId, '', '', '', '', ''].join(','));
       items.push(`<li><a href="pages/${id}.html" target="_blank">${id}</a></li>`);

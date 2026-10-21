@@ -24,6 +24,8 @@ const ModelSchema = z.object({
   /** Passed through to the provider request body as-is. */
   params: z.record(z.string(), z.unknown()).default({}),
   maxTokensParam: z.enum(['max_tokens', 'max_completion_tokens']).default('max_tokens'),
+  /** Constrain output to the request's `responseSchema` (Anthropic `output_config.format`). */
+  structuredOutput: z.boolean().default(false),
 });
 
 export const ModelsConfigSchema = z
@@ -35,8 +37,11 @@ export const ModelsConfigSchema = z
   })
   .superRefine((cfg, ctx) => {
     for (const [alias, m] of Object.entries(cfg.models)) {
-      if (!(m.provider in cfg.providers)) {
+      const provider = cfg.providers[m.provider];
+      if (!provider) {
         ctx.addIssue({ code: 'custom', path: ['models', alias, 'provider'], message: `unknown provider "${m.provider}"` });
+      } else if (m.structuredOutput && provider.kind !== 'anthropic') {
+        ctx.addIssue({ code: 'custom', path: ['models', alias, 'structuredOutput'], message: 'only supported for anthropic providers' });
       }
     }
     const refs: [string[], string][] = [

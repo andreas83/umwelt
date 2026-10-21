@@ -3,6 +3,7 @@
 #
 # Prices are USD per 1M tokens (standard tier, checked 2026-10-21 — verify before trusting cost numbers).
 # `params` is passed through to the provider request as-is.
+# `structuredOutput: true` constrains output to the expected JSON schema (Anthropic only for now).
 
 providers:
   anthropic:
@@ -30,12 +31,14 @@ models:
     provider: anthropic
     model: claude-haiku-5-5
     pricing: { input: 0.10, output: 0.50, cachedInput: 0.01 }
+    structuredOutput: true
     params:
       thinking: { type: disabled } # latency first; allowed at effort high or below
   sonnet-5-5:
     provider: anthropic
     model: claude-sonnet-5-5
     pricing: { input: 2.00, output: 10.00, cachedInput: 0.20 }
+    structuredOutput: true
     params:
       thinking: { type: between_tools } # Sonnet 5.5's thinking-off mode
       output_config: { effort: low }
@@ -43,6 +46,7 @@ models:
     provider: anthropic
     model: claude-sonnet-5-5
     pricing: { input: 2.00, output: 10.00, cachedInput: 0.20 }
+    structuredOutput: true
     params:
       output_config: { effort: medium }
   gpt-6-luna:

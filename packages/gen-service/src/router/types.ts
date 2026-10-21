@@ -1,8 +1,15 @@
+import type { z } from 'zod';
+
 export interface CompletionRequest {
   /** Stable prefix (instructions + profile). Sent as the system prompt and marked cacheable where supported. */
   system: string;
   user: string;
   maxTokens: number;
+  /**
+   * Expected JSON shape. Models with `structuredOutput: true` in the catalog are constrained to it by the
+   * provider; for the rest it is ignored. Callers validate either way.
+   */
+  responseSchema?: z.ZodType;
   signal?: AbortSignal;
   onText?: (delta: string) => void;
 }

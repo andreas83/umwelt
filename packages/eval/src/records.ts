@@ -29,7 +29,7 @@ export interface GenerationRecord {
 }
 
 export interface Judgment {
-  axes: Record<string, { relevant: boolean; fit: number; softened: boolean }>;
+  axes: Partial<Record<string, { relevant: boolean; fit: number; softened: boolean } | undefined>>;
   plausibility: number;
   boundary_violation: boolean;
   note: string;

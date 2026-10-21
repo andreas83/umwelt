@@ -19,9 +19,9 @@ Personal art project. Possibly shared within the art scene, never as a product.
 - [x] Candidates: Haiku 5.5, GPT-6 Luna, DeepSeek V4.1 Flash, Gemini 3.8 Flash, Sonnet 5.5, Mercury 2 (in catalog)
 - [x] Anthropic runs: content/v1 baseline vs content/v2 (stronger slant), Haiku 5.5 + Sonnet 5.5, judge v2
 - [ ] Other providers (keys needed), blind ratings from 2–3 raters
-- [ ] Structured outputs for Anthropic (Haiku first-try JSON validity 74% on v2, mostly bracket errors)
-- [ ] content/v4: say that balanced axes mean a neutral outlet (Haiku refused one neutral page on v2)
-- [ ] judge/v3: fictional people may be quoted (all 6 "boundary violations" so far were false positives)
+- [x] Structured outputs for Anthropic (Haiku first-try JSON validity was 74% on v2, mostly bracket errors)
+- [x] content/v4: balanced axes mean a neutral outlet (Haiku refused one neutral page on v2)
+- [x] judge/v3: fictional people may be quoted (all 6 "boundary violations" on v1/v2 were false positives)
 - [ ] Decision: default `planner` / `content` / `gallery` model documented in `config/models.yaml`
 
 ## Phase 2 — MVP (mode A, text only)
@@ -36,8 +36,8 @@ Personal art project. Possibly shared within the art scene, never as a product.
 - [x] Error template for failed generation
 
 ## Phase 3 — Consistency & speed
-- [ ] Domain skeleton generation (CSS, header, footer, nav) + cache
-- [ ] Streaming: skeleton renders immediately, content fills in progressively
+- [x] Domain skeleton generation (design tokens → CSS, header, footer, nav) + cache _(not yet checked live: API limit)_
+- [x] Streaming: skeleton renders immediately, content fills in progressively (per page, not per block yet)
 - [ ] Prompt caching: stable prefix ordering verified with metrics
 - [ ] Pre-generation of the top 3 likely links in the background
 - [ ] Synthetic search engine (results pages with resolvable synthetic URLs)

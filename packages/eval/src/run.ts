@@ -17,7 +17,9 @@ import type { TestSet, TestUrl } from './testset.js';
 import type { Profile } from '@umwelt/profile';
 
 /** Default for new runs; a run keeps the prompt it was created with. */
-export const DEFAULT_CONTENT_PROMPT = 'content/v2';
+export const DEFAULT_CONTENT_PROMPT = 'content/v4';
+/** The eval generates single pages without a domain skeleton. */
+const SITE_UNDEFINED = 'Not defined yet. Invent the site from the URL.';
 
 /** Rough per-page token use for the cost estimate (one attempt). */
 const EST_INPUT_TOKENS = 1_500;
@@ -116,7 +118,7 @@ export async function runGeneration(
         let record: GenerationRecord;
         try {
           const outcome = await generatePageContent(client, {
-            system: fillTemplate(prompt.system, { profile: describeProfile(t.profile) }),
+            system: fillTemplate(prompt.system, { profile: describeProfile(t.profile), site: SITE_UNDEFINED }),
             user: fillTemplate(prompt.user, { url: t.url.url, world_date: run.meta.worldDate, link_context: '' }),
           });
           record = {

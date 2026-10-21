@@ -3,7 +3,8 @@ import { parseProfile } from '@umwelt/profile';
 import type { CompletionRequest, CompletionResult, LlmClient } from './router/types.js';
 import { PageService, resolveHref, type CompletionMetric } from './service.js';
 import { pureGen } from './strategies/pure-gen.js';
-import type { CachedPage, LinkStore, PageStore } from './world/stores.js';
+import type { JsonStore, LinkStore } from './world/stores.js';
+import { defaultSkeleton } from './skeleton/schema.js';
 
 const page = (links: Array<{ href: string; description: string }>) => ({
   siteName: 'Ledger',
@@ -13,10 +14,11 @@ const page = (links: Array<{ href: string; description: string }>) => ({
   links: links.map((l) => ({ ...l, text: 'link' })),
 });
 
-function setup(outputs: string[]) {
-  const requests: CompletionRequest[] = [];
-  const client: LlmClient = {
-    alias: 'fake',
+const skeleton = { ...defaultSkeleton('ledger.test'), siteName: 'The Ledger', nav: [{ text: 'Local', href: '/local' }] };
+
+function fakeClient(alias: string, outputs: string[], requests: CompletionRequest[]): LlmClient {
+  return {
+    alias,
     async complete(req): Promise<CompletionResult> {
       requests.push(req);
       return {
@@ -29,8 +31,16 @@ function setup(outputs: string[]) {
       };
     },
   };
-  const pageMap = new Map<string, CachedPage>();
-  const pages: PageStore = { get: async (k) => pageMap.get(k), set: async (k, v) => void pageMap.set(k, v) };
+}
+
+function memStore<T>(): JsonStore<T> {
+  const m = new Map<string, T>();
+  return { get: async (k) => m.get(k), set: async (k, v) => void m.set(k, v) };
+}
+
+function setup(outputs: string[], skeletonOutputs: string[] = Array(5).fill(JSON.stringify(skeleton))) {
+  const requests: CompletionRequest[] = [];
+  const skeletonRequests: CompletionRequest[] = [];
   const linkMap = new Map<string, string>();
   const links: LinkStore = {
     get: (u) => linkMap.get(u),
@@ -38,21 +48,19 @@ function setup(outputs: string[]) {
   };
   const metrics: CompletionMetric[] = [];
   const service = new PageService({
-    client,
-    prompt: {
-      name: 'content',
-      version: 'test',
-      system: 'P: {{profile}}',
-      user: 'U: {{url}} {{world_date}} {{link_context}}',
-    },
+    contentClient: fakeClient('content', outputs, requests),
+    skeletonClient: fakeClient('skeleton', skeletonOutputs, skeletonRequests),
+    contentPrompt: { name: 'content', version: 'test', system: 'P: {{profile}} S: {{site}}', user: 'U: {{url}} {{world_date}} {{link_context}}' },
+    skeletonPrompt: { name: 'skeleton', version: 'test', system: 'P: {{profile}}', user: '{{host}} {{url}} {{world_date}}' },
     strategy: pureGen,
-    pages,
+    pages: memStore(),
+    skeletons: memStore(),
     links,
     onCompletion: (m) => metrics.push(m),
   });
   const profile = parseProfile({ id: 'p', name: 'P' });
   const req = (url: string) => ({ url: new URL(url), profile, profileId: 'p1', world: { seed: 's', date: '2026-10-21' } });
-  return { service, requests, metrics, req, linkMap };
+  return { service, requests, skeletonRequests, metrics, req, linkMap };
 }
 
 describe('PageService', () => {
@@ -63,7 +71,7 @@ describe('PageService', () => {
     ]);
     const first = await service.getPage(req('https://ledger.test/a'));
     expect(first.ok && first.cached).toBe(false);
-    expect(first.parts.body).toContain('href="https://ledger.test/next#frag"');
+    expect(first.parts.main).toContain('href="https://ledger.test/next#frag"');
 
     const again = await service.getPage(req('https://LEDGER.test/a#top'));
     expect(again.ok && again.cached).toBe(true);
@@ -71,8 +79,39 @@ describe('PageService', () => {
 
     await service.getPage(req('https://ledger.test/next'));
     expect(requests[1]?.user).toContain('A page about the next thing.');
-    expect(metrics).toHaveLength(2);
+    expect(metrics.filter((m) => m.kind === 'page')).toHaveLength(2);
     expect(JSON.stringify(metrics)).not.toContain('P:'); // no profile in metrics
+  });
+
+  it('generates one skeleton per domain and puts it in later prompts', async () => {
+    const { service, requests, skeletonRequests, req, linkMap } = setup([JSON.stringify(page([])), JSON.stringify(page([]))]);
+    const first = await service.getPage(req('https://ledger.test/a'));
+    expect(first.parts.header).toContain('The Ledger');
+    expect(first.parts.header).toContain('href="https://ledger.test/local"');
+    expect(requests[0]?.system).toContain('Not defined yet'); // first page ran in parallel with the skeleton
+
+    expect(await service.cachedSkeleton(req('https://ledger.test/other'))).toBeDefined();
+    await service.getPage(req('https://ledger.test/b'));
+    expect(skeletonRequests).toHaveLength(1);
+    expect(requests[1]?.system).toContain('Site name: The Ledger');
+    expect(linkMap.get('https://ledger.test/local')).toContain('"Local" section');
+  });
+
+  it('survives a throwing skeleton call', async () => {
+    const { service, req } = setup([JSON.stringify(page([]))]);
+    (service as unknown as { deps: { skeletonClient: LlmClient } }).deps.skeletonClient = {
+      alias: 'down',
+      complete: () => Promise.reject(new Error('limit reached')),
+    };
+    const r = await service.getPage(req('https://down.test/'));
+    expect(r.ok && r.parts.header).toContain('down.test');
+  });
+
+  it('falls back to a default skeleton without caching it', async () => {
+    const { service, req } = setup([JSON.stringify(page([]))], ['nope', 'nope']);
+    const r = await service.getPage(req('https://plain.test/'));
+    expect(r.ok && r.parts.header).toContain('plain.test');
+    expect(await service.cachedSkeleton(req('https://plain.test/'))).toBeUndefined();
   });
 
   it('dedupes concurrent requests for the same page', async () => {
@@ -85,7 +124,7 @@ describe('PageService', () => {
     const { service, requests, req } = setup(['nope', 'still nope', JSON.stringify(page([]))]);
     const r = await service.getPage(req('https://x.test/'));
     expect(r.ok).toBe(false);
-    expect(r.parts.body).toContain('could not be generated');
+    expect(r.parts.main).toContain('could not be generated');
     expect((await service.getPage(req('https://x.test/'))).ok).toBe(true);
     expect(requests).toHaveLength(3);
   });

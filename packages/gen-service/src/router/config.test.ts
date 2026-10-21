@@ -21,6 +21,11 @@ describe('models.yaml', () => {
     expect(() => parseModelsConfig(base.replace('provider: p', 'provider: nope') + 'roles: {}')).toThrow(/unknown provider/);
   });
 
+  it('rejects structuredOutput on non-anthropic providers', () => {
+    const cfg = base.replace('pricing: { input: 1, output: 2 } }', 'pricing: { input: 1, output: 2 }, structuredOutput: true }');
+    expect(() => parseModelsConfig(cfg + 'roles: {}')).toThrow(/only supported for anthropic/);
+  });
+
   it('rejects roles pointing at unknown models', () => {
     expect(() => parseModelsConfig(base + 'roles: { planner: ghost }')).toThrow(/unknown model .*ghost/);
   });

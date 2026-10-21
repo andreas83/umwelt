@@ -1,4 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
+import type { z } from 'zod';
 import type { ModelConfig } from './config.js';
 import { costUsd } from './cost.js';
 import { StreamTimer } from './timer.js';
@@ -11,6 +13,7 @@ export function anthropicClient(alias: string, model: ModelConfig, client: Anthr
       const timer = new StreamTimer();
       const params = {
         ...model.params,
+        ...(model.structuredOutput && req.responseSchema ? outputConfig(model.params, req.responseSchema) : {}),
         model: model.model,
         max_tokens: req.maxTokens,
         system: [{ type: 'text', text: req.system, cache_control: { type: 'ephemeral' } }],
@@ -41,6 +44,13 @@ export function anthropicClient(alias: string, model: ModelConfig, client: Anthr
       };
     },
   };
+}
+
+/** Merges the JSON-schema format into any configured `output_config` (e.g. effort). */
+function outputConfig(params: Record<string, unknown>, schema: z.ZodType): { output_config: Record<string, unknown> } {
+  // Only type + schema: our own zod validation decides validity, so the SDK's auto-parse must not throw first.
+  const { type, schema: jsonSchema } = zodOutputFormat(schema);
+  return { output_config: { ...(params.output_config as Record<string, unknown> | undefined), format: { type, schema: jsonSchema } } };
 }
 
 function normalizeStop(reason: string | null): string {

@@ -1,7 +1,7 @@
 export * from './strategies/types.js';
 export { pureGen } from './strategies/pure-gen.js';
 export type { WorldState } from './world/types.js';
-export { normalizeUrl, pageCacheKey } from './world/cache-key.js';
+export { normalizeUrl, pageCacheKey, skeletonCacheKey } from './world/cache-key.js';
 export * from './world/stores.js';
 export * from './service.js';
 export * from './router/config.js';
@@ -12,4 +12,6 @@ export * from './generator/schema.js';
 export * from './generator/parse.js';
 export * from './generator/generate.js';
 export * from './renderer/render.js';
+export * from './skeleton/schema.js';
+export { skeletonCss, safePalette } from './skeleton/theme.js';
 export { esc } from './renderer/escape.js';

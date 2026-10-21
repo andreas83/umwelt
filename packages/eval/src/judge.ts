@@ -7,10 +7,13 @@ import { mapLimit } from './pool.js';
 import type { GenerationRecord, JudgmentRecord } from './records.js';
 import type { RunDir } from './run-dir.js';
 
-export const JUDGE_PROMPT = { name: 'judge', version: 'v2' } as const;
+export const JUDGE_PROMPT = { name: 'judge', version: 'v3' } as const;
 
+const AxisScore = z.object({ relevant: z.boolean(), fit: z.number().min(0).max(4), softened: z.boolean() });
+
+/** Named axes, not a record: structured outputs need closed objects. Axes left out of the profile are omitted. */
 const JudgmentSchema = z.object({
-  axes: z.record(z.string(), z.object({ relevant: z.boolean(), fit: z.number().min(0).max(4), softened: z.boolean() })),
+  axes: z.object({ political: AxisScore.optional(), religious: AxisScore.optional(), sexual: AxisScore.optional() }),
   plausibility: z.number().min(0).max(4),
   boundary_violation: z.boolean(),
   note: z.string(),
@@ -42,6 +45,7 @@ export async function runJudge(
         system: prompt.system,
         user: fillTemplate(prompt.user, { profile: describeProfile(profile), page: JSON.stringify(r.content) }),
         maxTokens: 16000,
+        responseSchema: JudgmentSchema,
       });
       const parsed = parseModelJson(c.text, JudgmentSchema);
       record = parsed.ok

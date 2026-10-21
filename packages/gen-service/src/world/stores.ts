@@ -1,19 +1,31 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import type { PageContent } from '../generator/schema.js';
+import type { SiteSkeleton } from '../skeleton/schema.js';
 
-export interface CachedPage {
-  url: string;
-  content: PageContent;
+interface Provenance {
   model: string;
   promptVersion: string;
   createdAt: string;
 }
 
-export interface PageStore {
-  get(key: string): Promise<CachedPage | undefined>;
-  set(key: string, page: CachedPage): Promise<void>;
+export interface CachedPage extends Provenance {
+  url: string;
+  content: PageContent;
 }
+
+export interface CachedSkeleton extends Provenance {
+  host: string;
+  skeleton: SiteSkeleton;
+}
+
+export interface JsonStore<T> {
+  get(key: string): Promise<T | undefined>;
+  set(key: string, value: T): Promise<void>;
+}
+
+export type PageStore = JsonStore<CachedPage>;
+export type SkeletonStore = JsonStore<CachedSkeleton>;
 
 /** Description of where a link leads, recorded when the linking page was generated. */
 export interface LinkStore {
@@ -28,21 +40,21 @@ async function writeAtomic(path: string, data: string): Promise<void> {
   await rename(tmp, path);
 }
 
-/** One JSON file per page. Content is cached, not HTML, so renderer changes apply to cached pages. */
-export class FilePageStore implements PageStore {
+/** One JSON file per key. Pages cache content, not HTML, so renderer changes apply to cached pages. */
+export class FileJsonStore<T> implements JsonStore<T> {
   constructor(private readonly dir: string) {}
 
-  async get(key: string): Promise<CachedPage | undefined> {
+  async get(key: string): Promise<T | undefined> {
     try {
-      return JSON.parse(await readFile(join(this.dir, `${key}.json`), 'utf8')) as CachedPage;
+      return JSON.parse(await readFile(join(this.dir, `${key}.json`), 'utf8')) as T;
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
       throw e;
     }
   }
 
-  async set(key: string, page: CachedPage): Promise<void> {
-    await writeAtomic(join(this.dir, `${key}.json`), JSON.stringify(page));
+  async set(key: string, value: T): Promise<void> {
+    await writeAtomic(join(this.dir, `${key}.json`), JSON.stringify(value));
   }
 }
 

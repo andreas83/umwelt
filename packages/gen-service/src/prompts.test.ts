@@ -9,10 +9,19 @@ describe('prompts', () => {
     expect(() => fillTemplate('{{y}}', {})).toThrow(/"y"/);
   });
 
-  it.each(['v1', 'v2', 'v3'])('splits system and user parts of content/%s', async (version) => {
+  it.each(['v1', 'v2', 'v3', 'v4', 'v5'])('splits system and user parts of content/%s', async (version) => {
     const p = await loadPrompt(promptsDir, 'content', version);
     expect(p.system).toContain('{{profile}}');
     expect(p.user).toContain('{{url}}');
     expect(p.system).not.toContain('{{url}}'); // per-request data stays out of the cacheable prefix
+  });
+});
+
+describe('skeleton prompt', () => {
+  it('keeps per-domain data out of the system part', async () => {
+    const p = await loadPrompt(promptsDir, 'skeleton', 'v1');
+    expect(p.system).toContain('{{profile}}');
+    expect(p.user).toContain('{{host}}');
+    expect(p.system).not.toContain('{{host}}');
   });
 });

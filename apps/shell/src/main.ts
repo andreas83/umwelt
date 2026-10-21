@@ -3,8 +3,8 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { app, BrowserWindow, ipcMain, protocol, safeStorage, type IpcMainInvokeEvent } from 'electron';
 import {
+  FileJsonStore,
   FileLinkStore,
-  FilePageStore,
   loadModelsConfig,
   loadPrompt,
   MissingApiKeyError,
@@ -26,7 +26,8 @@ import { IPC, type ProfileForm } from './shared/ipc.js';
 import { NEW_TAB_URL, SETTINGS_URL, TabManager } from './tabs.js';
 
 /** Content prompt used by the browser. Stored with each cached page. */
-const CONTENT_PROMPT = ['content', 'v3'] as const;
+const CONTENT_PROMPT = ['content', 'v5'] as const;
+const SKELETON_PROMPT = ['skeleton', 'v1'] as const;
 
 // Must run before `ready`. Note: no top-level await before `ready` either — in an ESM main, Electron
 // only emits `ready` once the entry module's top-level awaits have settled, so awaiting it deadlocks.
@@ -53,21 +54,26 @@ async function start(): Promise<void> {
     console.warn('warning: no OS keychain found; the profile is only obfuscated at rest, not encrypted.');
   }
 
-  let client: LlmClient | null = null;
+  let clients: { content: LlmClient; skeleton: LlmClient } | null = null;
   let unavailable: string | null = null;
   try {
-    client = new ModelRouter(await loadModelsConfig(modelsConfigPath)).forRole('content');
+    const router = new ModelRouter(await loadModelsConfig(modelsConfigPath));
+    clients = { content: router.forRole('content'), skeleton: router.forRole('skeleton') };
   } catch (e) {
     if (!(e instanceof MissingApiKeyError)) throw e;
     unavailable = `${e.message}, then restart Umwelt.`;
   }
 
   const metricsPath = join(userData, 'metrics.jsonl');
+  const noClient: LlmClient = { alias: 'none', complete: () => Promise.reject(new Error(unavailable ?? '')) };
   const service = new PageService({
-    client: client ?? ({ alias: 'none', complete: () => Promise.reject(new Error(unavailable ?? '')) } satisfies LlmClient),
-    prompt: await loadPrompt(promptsDir, ...CONTENT_PROMPT),
+    contentClient: clients?.content ?? noClient,
+    skeletonClient: clients?.skeleton ?? noClient,
+    contentPrompt: await loadPrompt(promptsDir, ...CONTENT_PROMPT),
+    skeletonPrompt: await loadPrompt(promptsDir, ...SKELETON_PROMPT),
     strategy: pureGen,
-    pages: new FilePageStore(join(userData, 'pages')),
+    pages: new FileJsonStore(join(userData, 'pages')),
+    skeletons: new FileJsonStore(join(userData, 'skeletons')),
     links: await FileLinkStore.open(join(userData, 'links.json')),
     onCompletion: (m: CompletionMetric) => void appendFile(metricsPath, JSON.stringify(m) + '\n'),
   });
