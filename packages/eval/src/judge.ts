@@ -7,10 +7,10 @@ import { mapLimit } from './pool.js';
 import type { GenerationRecord, JudgmentRecord } from './records.js';
 import type { RunDir } from './run-dir.js';
 
-export const JUDGE_PROMPT = { name: 'judge', version: 'v1' } as const;
+export const JUDGE_PROMPT = { name: 'judge', version: 'v2' } as const;
 
 const JudgmentSchema = z.object({
-  axes: z.record(z.string(), z.object({ fit: z.number().min(0).max(4), softened: z.boolean() })),
+  axes: z.record(z.string(), z.object({ relevant: z.boolean(), fit: z.number().min(0).max(4), softened: z.boolean() })),
   plausibility: z.number().min(0).max(4),
   boundary_violation: z.boolean(),
   note: z.string(),

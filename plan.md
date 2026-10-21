@@ -6,7 +6,7 @@ Personal art project. Possibly shared within the art scene, never as a product.
 - [x] Pick the project name: **Umwelt** (after von Uexküll: the world as one creature perceives it)
 - [x] Repo + pnpm workspace + TypeScript strict + Vitest
 - [ ] `.env` handling, API keys for 3–4 providers _(`.env.example` + `--env-file` done; keys still to add)_
-- [ ] Decide: in-process gen service vs. local HTTP service
+- [x] Decide: in-process gen service vs. local HTTP service → in-process (Electron main); `SourceStrategy` keeps it movable
 - [x] Write the prompt template structure (`prompts/`, versioned)
 
 ## Phase 1 — Model bake-off (decides the default models)
@@ -17,19 +17,23 @@ Personal art project. Possibly shared within the art scene, never as a product.
 - [x] Measure refusal / softening rate per profile axis (political, religious, sexual orientation) _(LLM judge, `prompts/judge/v1.md`)_
 - [x] Blind rating export (HTML gallery or CSV) for 2–3 raters
 - [x] Candidates: Haiku 5.5, GPT-6 Luna, DeepSeek V4.1 Flash, Gemini 3.8 Flash, Sonnet 5.5, Mercury 2 (in catalog)
-- [ ] Add API keys, `pnpm eval check`, full run with `--judge`, collect 2–3 blind ratings
+- [x] Anthropic runs: content/v1 baseline vs content/v2 (stronger slant), Haiku 5.5 + Sonnet 5.5, judge v2
+- [ ] Other providers (keys needed), blind ratings from 2–3 raters
+- [ ] Structured outputs for Anthropic (Haiku first-try JSON validity 74% on v2, mostly bracket errors)
+- [ ] content/v4: say that balanced axes mean a neutral outlet (Haiku refused one neutral page on v2)
+- [ ] judge/v3: fictional people may be quoted (all 6 "boundary violations" so far were false positives)
 - [ ] Decision: default `planner` / `content` / `gallery` model documented in `config/models.yaml`
 
 ## Phase 2 — MVP (mode A, text only)
-- [ ] Electron shell: window, tabs, address bar, back/forward
-- [ ] `protocol.handle` interceptor for http/https, with no network access from the renderer
-- [ ] Profile schema + local encrypted storage + basic settings UI
-- [ ] Strategy A (PureGen)
-- [ ] Planner → content generator → template renderer
-- [ ] Page cache keyed by `(url, profile_id, world_seed, mode)`
-- [ ] Link rewriting: every link stored with a description and resolved on click
-- [ ] "Generated" indicator (default on)
-- [ ] Error template for failed generation
+- [x] Electron shell: window, tabs, address bar, back/forward
+- [x] `protocol.handle` interceptor for http/https, with no network access from the renderer (web session: JS off, non-http schemes cancelled; internal session: http(s) → 403)
+- [x] Profile schema + local encrypted storage (safeStorage) + basic settings UI
+- [x] Strategy A (PureGen)
+- [x] Content generator → template renderer (single call; separate planner deferred until streaming in Phase 3)
+- [x] Page cache keyed by `(url, profile_id, world_seed, mode)` (JSON files for now; SQLite with the world model in Phase 4)
+- [x] Link rewriting: every link stored with a description and resolved on click
+- [x] "Generated" indicator (default on)
+- [x] Error template for failed generation
 
 ## Phase 3 — Consistency & speed
 - [ ] Domain skeleton generation (CSS, header, footer, nav) + cache

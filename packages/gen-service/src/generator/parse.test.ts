@@ -27,3 +27,14 @@ describe('looksLikeRefusal', () => {
     expect(looksLikeRefusal('{"title":"I can\'t stop reading this"}')).toBe(false);
   });
 });
+
+describe('PageContentSchema', () => {
+  it('accepts null for optional text fields', async () => {
+    const { PageContentSchema } = await import('./schema.js');
+    const page = {
+      siteName: 's', pageType: 'news', title: 't', teaser: null, links: [],
+      sections: [{ heading: null, blocks: [{ type: 'quote', text: 'q', cite: null }] }],
+    };
+    expect(PageContentSchema.safeParse(page).success).toBe(true);
+  });
+});

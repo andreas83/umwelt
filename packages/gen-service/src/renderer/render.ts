@@ -8,7 +8,7 @@ export interface RenderOptions {
   showGeneratedIndicator?: boolean;
 }
 
-const BASE_CSS = `
+export const BASE_CSS = `
 body{margin:0;font:16px/1.55 system-ui,sans-serif;color:#1d1d1f;background:#fff}
 header,main,footer{max-width:760px;margin:0 auto;padding:16px}
 header{border-bottom:1px solid #ddd}.site{font-weight:700;font-size:1.1rem}
@@ -19,9 +19,12 @@ blockquote{border-left:3px solid #ccc;margin:1em 0;padding-left:1em;color:#444}
 .img{background:#eee;color:#777;padding:40px 12px;text-align:center;border-radius:6px;font-size:.85rem}
 .generated{position:fixed;right:10px;bottom:10px;background:#111;color:#fff;font:600 12px system-ui;padding:4px 8px;border-radius:4px;opacity:.85}
 footer{border-top:1px solid #ddd;font-size:.9rem}footer li{margin:4px 0}
+.notice{max-width:560px;margin:15vh auto;padding:16px;text-align:center;color:#555}
 `;
 
-function block(b: ContentBlock): string {
+const INDICATOR = '<div class="generated">Generated</div>';
+
+function block(b: ContentBlock, href: (h: string) => string): string {
   switch (b.type) {
     case 'paragraph':
       return `<p>${esc(b.text)}</p>`;
@@ -34,26 +37,51 @@ function block(b: ContentBlock): string {
     case 'product':
       return `<div class="product"><strong>${esc(b.name)}</strong> <span class="price">${esc(b.price)}</span><p>${esc(b.description)}</p></div>`;
     case 'result':
-      return `<div class="result"><a href="#">${esc(b.title)}</a><div class="url">${esc(b.url)}</div><p>${esc(b.snippet)}</p></div>`;
+      return `<div class="result"><a href="${esc(href(b.url))}">${esc(b.title)}</a><div class="url">${esc(b.url)}</div><p>${esc(b.snippet)}</p></div>`;
   }
+}
+
+export interface PageParts {
+  title: string;
+  body: string;
+}
+
+/** Title and body markup, for streaming the page into an already-sent document head. */
+export function renderPageParts(page: PageContent, opts: RenderOptions = {}): PageParts {
+  const linkHref = opts.linkHref ?? ((l) => l.href);
+  const resultHref = (url: string) => linkHref({ href: url, text: '', description: '' });
+  const sections = page.sections
+    .map((s) => `<section>${s.heading ? `<h2>${esc(s.heading)}</h2>` : ''}${s.blocks.map((b) => block(b, resultHref)).join('\n')}</section>`)
+    .join('\n');
+  const images = page.images.map((i) => `<div class="img" role="img" aria-label="${esc(i.alt)}">${esc(i.alt)}</div>`).join('');
+  const links = page.links.length
+    ? `<ul>${page.links.map((l) => `<li><a href="${esc(linkHref(l))}" title="${esc(l.description)}">${esc(l.text)}</a></li>`).join('')}</ul>`
+    : '';
+  return {
+    title: `${page.title} · ${page.siteName}`,
+    body: `<header><div class="site">${esc(page.siteName)}</div></header>
+<main><h1>${esc(page.title)}</h1>${page.teaser ? `<p class="teaser">${esc(page.teaser)}</p>` : ''}${images}
+${sections}</main>
+<footer>${links}</footer>${opts.showGeneratedIndicator === false ? '' : INDICATOR}`,
+  };
+}
+
+export function documentHead(extraCss = ''): string {
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>${BASE_CSS}${extraCss}</style></head><body>`;
 }
 
 /** JSON → HTML. All model text is escaped; the model never writes markup (invariant 6). */
 export function renderPage(page: PageContent, opts: RenderOptions = {}): string {
-  const href = opts.linkHref ?? ((l) => l.href);
-  const sections = page.sections
-    .map((s) => `<section>${s.heading ? `<h2>${esc(s.heading)}</h2>` : ''}${s.blocks.map(block).join('\n')}</section>`)
-    .join('\n');
-  const images = page.images.map((i) => `<div class="img" role="img" aria-label="${esc(i.alt)}">${esc(i.alt)}</div>`).join('');
-  const links = page.links.length
-    ? `<ul>${page.links.map((l) => `<li><a href="${esc(href(l))}" title="${esc(l.description)}">${esc(l.text)}</a></li>`).join('')}</ul>`
-    : '';
-  const indicator = opts.showGeneratedIndicator === false ? '' : '<div class="generated">Generated</div>';
+  const { title, body } = renderPageParts(page, opts);
+  return `${documentHead()}<title>${esc(title)}</title>${body}</body></html>`;
+}
 
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(page.title)} · ${esc(page.siteName)}</title><style>${BASE_CSS}</style></head><body>
-<header><div class="site">${esc(page.siteName)}</div></header>
-<main><h1>${esc(page.title)}</h1>${page.teaser ? `<p class="teaser">${esc(page.teaser)}</p>` : ''}${images}
-${sections}</main>
-<footer>${links}</footer>${indicator}</body></html>`;
+/** Body of the error template. Shown, never cached. */
+export function renderErrorParts(url: string, reason: string): PageParts {
+  return {
+    title: 'Page could not be generated',
+    body: `<div class="notice"><h1>This page could not be generated</h1><p>${esc(reason)}</p>
+<p class="meta">${esc(url)}</p><p><a href="${esc(url)}">Try again</a></p></div>${INDICATOR}`,
+  };
 }

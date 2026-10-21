@@ -16,7 +16,8 @@ import type { RunDir } from './run-dir.js';
 import type { TestSet, TestUrl } from './testset.js';
 import type { Profile } from '@umwelt/profile';
 
-export const CONTENT_PROMPT = { name: 'content', version: 'v1' } as const;
+/** Default for new runs; a run keeps the prompt it was created with. */
+export const DEFAULT_CONTENT_PROMPT = 'content/v2';
 
 /** Rough per-page token use for the cost estimate (one attempt). */
 const EST_INPUT_TOKENS = 1_500;
@@ -77,7 +78,8 @@ export async function runGeneration(
   concurrency: number,
   log: (line: string) => void = console.log,
 ): Promise<void> {
-  const prompt = await loadPrompt(promptsDir, CONTENT_PROMPT.name, CONTENT_PROMPT.version);
+  const [name, version] = run.meta.contentPrompt.split('/') as [string, string];
+  const prompt = await loadPrompt(promptsDir, name, version);
   const done = new Set(
     (await readJsonl<GenerationRecord>(run.results)).filter((r) => r.status !== 'error').map((r) => r.key),
   );
@@ -115,7 +117,7 @@ export async function runGeneration(
         try {
           const outcome = await generatePageContent(client, {
             system: fillTemplate(prompt.system, { profile: describeProfile(t.profile) }),
-            user: fillTemplate(prompt.user, { url: t.url.url, world_date: run.meta.worldDate }),
+            user: fillTemplate(prompt.user, { url: t.url.url, world_date: run.meta.worldDate, link_context: '' }),
           });
           record = {
             ...base,

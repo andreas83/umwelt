@@ -23,3 +23,14 @@ describe('renderPage', () => {
     expect(renderPage(page, { showGeneratedIndicator: false })).not.toContain('class="generated"');
   });
 });
+
+describe('renderPageParts', () => {
+  it('routes search-result links through linkHref', async () => {
+    const { renderPageParts } = await import('./render.js');
+    const parts = renderPageParts(
+      { ...page, sections: [{ blocks: [{ type: 'result', title: 'T', url: 'javascript:x', snippet: 's' }] }] },
+      { linkHref: () => '#' },
+    );
+    expect(parts.body).toContain('<a href="#">T</a>');
+  });
+});

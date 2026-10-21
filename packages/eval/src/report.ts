@@ -23,9 +23,11 @@ export interface ModelSummary {
   costPerPage: number | null;
   plausibility: number | null;
   boundaryViolations: number;
-  /** Over non-neutral profiles. */
+  /** Over non-neutral profiles, only where the judge marked the axis relevant to the page. */
   fit: Record<string, number | null>;
   softened: Record<string, number | null>;
+  /** Share of non-neutral pages where the judge found the axis relevant. */
+  relevant: Record<string, number | null>;
   refusalByProfile: Record<string, number | null>;
 }
 
@@ -47,13 +49,12 @@ export function summarize(results: GenerationRecord[], judgments: JudgmentRecord
       return j ? [{ r, j }] : [];
     });
     const biased = js.filter(({ r }) => r.profileId !== NEUTRAL_PROFILE);
-    const perAxis = (f: (a: { fit: number; softened: boolean }) => number | boolean) =>
-      Object.fromEntries(
-        AXES.map((axis) => {
-          const vals = biased.flatMap(({ j }) => (j.axes[axis] ? [f(j.axes[axis])] : []));
-          return [axis, typeof vals[0] === 'boolean' ? rate(vals as boolean[]) : mean(vals as number[])];
-        }),
-      );
+    const axisScores = (axis: string, relevantOnly: boolean) =>
+      biased.flatMap(({ j }) => {
+        const a = j.axes[axis];
+        return a && (!relevantOnly || a.relevant) ? [a] : [];
+      });
+    const perAxis = <T>(f: (axis: string) => T) => Object.fromEntries(AXES.map((axis) => [axis, f(axis)]));
 
     return {
       model,
@@ -70,8 +71,9 @@ export function summarize(results: GenerationRecord[], judgments: JudgmentRecord
       costPerPage: mean(rs.map((r) => r.attempts.reduce((s, a) => s + a.costUsd, 0))),
       plausibility: mean(js.map(({ j }) => j.plausibility)),
       boundaryViolations: js.filter(({ j }) => j.boundary_violation).length,
-      fit: perAxis((a) => a.fit) as Record<string, number | null>,
-      softened: perAxis((a) => a.softened) as Record<string, number | null>,
+      fit: perAxis((axis) => mean(axisScores(axis, true).map((a) => a.fit))),
+      softened: perAxis((axis) => rate(axisScores(axis, true).map((a) => a.softened))),
+      relevant: perAxis((axis) => rate(axisScores(axis, false).map((a) => a.relevant))),
       refusalByProfile: Object.fromEntries(
         profiles.map((p) => [p, rate(rs.filter((r) => r.profileId === p).map((r) => r.status === 'refused'))]),
       ),
@@ -107,12 +109,12 @@ ${table(
 ## Refusal rate by profile
 ${table(['model', ...profiles], s.map((m) => [m.model, ...profiles.map((p) => pct(m.refusalByProfile[p] ?? null))]))}
 
-## Profile adherence (judge; non-neutral profiles; fit 0–4)
+## Profile adherence (judge; non-neutral profiles; fit 0–4 and softened over pages where the axis is relevant)
 ${table(
-  ['model', ...AXES.flatMap((a) => [`${a} fit`, `${a} softened`]), 'plausibility', 'boundary violations'],
+  ['model', ...AXES.flatMap((a) => [`${a} fit`, `${a} softened`, `${a} relevant`]), 'plausibility', 'boundary violations'],
   s.map((m) => [
     m.model,
-    ...AXES.flatMap((a) => [num(m.fit[a] ?? null), pct(m.softened[a] ?? null)]),
+    ...AXES.flatMap((a) => [num(m.fit[a] ?? null), pct(m.softened[a] ?? null), pct(m.relevant[a] ?? null)]),
     num(m.plausibility),
     String(m.boundaryViolations),
   ]),
@@ -139,6 +141,7 @@ export function toCsv(s: ModelSummary[]): string {
     ...AXES.flatMap((a): [string, (m: ModelSummary) => unknown][] => [
       [`${a}_fit`, (m) => m.fit[a]],
       [`${a}_softened`, (m) => m.softened[a]],
+      [`${a}_relevant`, (m) => m.relevant[a]],
     ]),
   ];
   return [cols.map(([c]) => c).join(','), ...s.map((m) => cols.map(([, f]) => f(m) ?? '').join(','))].join('\n') + '\n';

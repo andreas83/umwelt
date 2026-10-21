@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'">
+  <title>Profile</title>
+  <link rel="stylesheet" href="page.css">
+</head>
+<body>
+  <main>
+    <h1>Profile</h1>
+    <p class="lead">Shapes every generated page. Stored encrypted on this machine; sent only inside prompts to the model.</p>
+    <form id="form">
+      <label for="name">Name</label>
+      <input type="text" id="name" required>
+      <label for="tone">Tone <span class="hint">e.g. warm, dry, sardonic, earnest</span></label>
+      <input type="text" id="tone">
+      <label for="readingLevel">Reading level</label>
+      <select id="readingLevel">
+        <option value="simple">Simple</option>
+        <option value="standard">Standard</option>
+        <option value="expert">Expert</option>
+      </select>
+      <label for="language">Language <span class="hint">ISO code, e.g. en, de</span></label>
+      <input type="text" id="language">
+      <label for="interests">Interests <span class="hint">comma separated</span></label>
+      <input type="text" id="interests">
+      <label>Worldview <span class="hint">untick to leave an axis out of the profile</span></label>
+      <div id="axes"></div>
+      <label for="strength">Profile strength <span class="hint" id="strengthValue"></span></label>
+      <input type="range" id="strength" min="0" max="100" step="5">
+      <button class="primary" type="submit">Save</button><span id="status"></span>
+    </form>
+  </main>
+  <script type="module" src="ui/settings.js"></script>
+</body>
+</html>

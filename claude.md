@@ -77,9 +77,13 @@ pricing, pass-through `params`), and `roles` (role → alias). The `judge` role 
 Node 24 (`nvm use`), pnpm 10 via corepack.
 - `pnpm build` / `pnpm typecheck` — `tsc -b` over all project references
 - `pnpm test` — Vitest; resolves workspace packages to `src/` via the `source` export condition, no build needed
-- `pnpm dev` — build, then launch the Electron shell
+- `pnpm dev` — build, then launch the Electron shell. App data (profile.enc, pages/, links.json, metrics.jsonl): `~/.config/Umwelt/`
+- Smoke test: `UMWELT_SMOKE_URL=<url> UMWELT_SMOKE_OUT=<dir> pnpm --filter @umwelt/shell dev` writes chrome.png + page.png and quits
 - `pnpm eval <check|run|judge|report|gallery>` — model bake-off (reads `.env`). `pnpm eval --help` for options.
   `run` prints a cost estimate and only spends money with `--yes`. Runs land in `data/eval/<run-id>/` and are resumable.
+
+Electron main is ESM: never `await` before `app.whenReady()` at top level (Electron delays `ready` until the
+entry module's top-level awaits settle → deadlock). Preloads must be CommonJS (`.cts`).
 
 Workspace packages are named `@umwelt/*`. Ubuntu 24.04+: Electron's `chrome-sandbox` must be root-owned with mode 4755
 (or allow unprivileged user namespaces); never ship `--no-sandbox`.

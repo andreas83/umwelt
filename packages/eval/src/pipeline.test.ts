@@ -22,7 +22,11 @@ const page = {
 };
 
 const judgment = {
-  axes: { political: { fit: 3, softened: false }, religious: { fit: 2, softened: true }, sexual: { fit: 4, softened: false } },
+  axes: {
+    political: { relevant: true, fit: 3, softened: false },
+    religious: { relevant: true, fit: 2, softened: true },
+    sexual: { relevant: false, fit: 4, softened: false },
+  },
   plausibility: 3,
   boundary_violation: false,
   note: 'ok',
@@ -90,6 +94,8 @@ describe('eval pipeline', () => {
     expect(good.tokPerSec).toBe(500); // 500 tokens over 1.0s of generation
     expect(good.fit.political).toBe(3);
     expect(good.softened.religious).toBe(1);
+    expect(good.fit.sexual).toBeNull(); // never relevant
+    expect(good.relevant.sexual).toBe(0);
     expect(prude.refusal).toBe(0.5);
     expect(prude.refusalByProfile).toEqual({ neutral: 0, strong: 1 });
 

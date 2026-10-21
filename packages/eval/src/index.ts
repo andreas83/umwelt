@@ -6,7 +6,7 @@ import { runJudge } from './judge.js';
 import { modelsConfigPath } from './paths.js';
 import { writeReport } from './report.js';
 import { createRun, openRun } from './run-dir.js';
-import { CONTENT_PROMPT, estimateCost, estimateJudgeCost, planTasks, runGeneration } from './run.js';
+import { DEFAULT_CONTENT_PROMPT, estimateCost, estimateJudgeCost, planTasks, runGeneration } from './run.js';
 import { loadTestSet } from './testset.js';
 
 const USAGE = `Usage: pnpm eval <command> [options]
@@ -22,6 +22,7 @@ Options:
   --urls N                only the first N test URLs
   --profiles a,b          only these profile ids
   --run <id>              resume or target an existing run (data/eval/<id>)
+  --prompt name/version   content prompt for a new run (default: ${DEFAULT_CONTENT_PROMPT})
   --concurrency N         parallel requests per model (default 3)
   --judge                 run the judge right after generation
   --yes                   actually spend money
@@ -34,6 +35,7 @@ const { positionals, values } = parseArgs({
     urls: { type: 'string' },
     profiles: { type: 'string' },
     run: { type: 'string' },
+    prompt: { type: 'string', default: DEFAULT_CONTENT_PROMPT },
     concurrency: { type: 'string', default: '3' },
     judge: { type: 'boolean', default: false },
     yes: { type: 'boolean', default: false },
@@ -83,7 +85,7 @@ switch (command) {
       console.log('\nDry run. Re-run with --yes to start.');
       break;
     }
-    const run = values.run ? await openRun(values.run) : await createRun(`${CONTENT_PROMPT.name}/${CONTENT_PROMPT.version}`);
+    const run = values.run ? await openRun(values.run) : await createRun(values.prompt);
     console.log(`run ${run.meta.runId} → ${run.dir}`);
     await runGeneration(run, router, tasks, concurrency);
     if (values.judge) await runJudge(run, router, set.profiles, concurrency);
