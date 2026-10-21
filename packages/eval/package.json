@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@umwelt/gen-service": "workspace:*",
-    "@umwelt/profile": "workspace:*"
+    "@umwelt/profile": "workspace:*",
+    "zod": "^4.6.7"
   },
   "scripts": {
     "start": "node --env-file-if-exists=../../.env dist/index.js"

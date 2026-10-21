@@ -10,13 +10,14 @@ Personal art project. Possibly shared within the art scene, never as a product.
 - [x] Write the prompt template structure (`prompts/`, versioned)
 
 ## Phase 1 — Model bake-off (decides the default models)
-- [ ] Test set: 20 URLs (news, forum, shop, blog, wiki-style, search) × 4 contrasting profiles
-- [ ] Model router with OpenAI-compatible clients + `config/models.yaml`
-- [ ] Content JSON schema (zod): title, teaser, sections, links, image prompts
-- [ ] Measure per model: time to first token, tok/s, cost per page, JSON validity rate
-- [ ] Measure refusal / softening rate per profile axis (political, religious, sexual orientation)
-- [ ] Blind rating export (HTML gallery or CSV) for 2–3 raters
-- [ ] Candidates: Haiku 5.5, GPT-6 Luna, DeepSeek V4.1 Flash, Gemini 3.8 Flash, Sonnet 5.5, Mercury 2
+- [x] Test set: 20 URLs (news, forum, shop, blog, wiki-style, search) × 4 contrasting profiles (`packages/eval/data/`)
+- [x] Model router (Anthropic SDK + OpenAI-compatible clients) + `config/models.yaml`
+- [x] Content JSON schema (zod): title, teaser, sections, links, image prompts
+- [x] Measure per model: time to first token, tok/s, cost per page, JSON validity rate _(harness built)_
+- [x] Measure refusal / softening rate per profile axis (political, religious, sexual orientation) _(LLM judge, `prompts/judge/v1.md`)_
+- [x] Blind rating export (HTML gallery or CSV) for 2–3 raters
+- [x] Candidates: Haiku 5.5, GPT-6 Luna, DeepSeek V4.1 Flash, Gemini 3.8 Flash, Sonnet 5.5, Mercury 2 (in catalog)
+- [ ] Add API keys, `pnpm eval check`, full run with `--judge`, collect 2–3 blind ratings
 - [ ] Decision: default `planner` / `content` / `gallery` model documented in `config/models.yaml`
 
 ## Phase 2 — MVP (mode A, text only)

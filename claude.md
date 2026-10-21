@@ -35,7 +35,7 @@ packages/gen-service  Generation pipeline (in-process at first; may become a loc
   ├─ renderer/        Templates: JSON → HTML, link rewriting, sanitizing
   ├─ assets/          Images (image model or placeholders), favicons
   ├─ world/           World state: SQLite (pages, links, entities, facts), world date, events
-  └─ router/          Model router (OpenAI-compatible clients, per-role model config)
+  └─ router/          Model router: Anthropic via official SDK, others via OpenAI-compatible client; per-role config
 packages/profile      Profile schema (zod), storage, encryption, per-domain overrides, strength slider
 packages/eval         Model bake-off harness: test set, metrics, blind rating export
 ```
@@ -56,6 +56,8 @@ The mode is selected per global setting, per domain, or per tab. Everything down
 - `image`: optional
 
 Models are swappable by config only. No provider-specific code outside `router/`.
+`config/models.yaml` has three parts: `providers` (kind + key env var), `models` (catalog alias → provider model id,
+pricing, pass-through `params`), and `roles` (role → alias). The `judge` role scores profile adherence in the eval.
 
 ## Tech stack
 - TypeScript (strict), pnpm workspaces, Node LTS
@@ -76,7 +78,8 @@ Node 24 (`nvm use`), pnpm 10 via corepack.
 - `pnpm build` / `pnpm typecheck` — `tsc -b` over all project references
 - `pnpm test` — Vitest; resolves workspace packages to `src/` via the `source` export condition, no build needed
 - `pnpm dev` — build, then launch the Electron shell
-- `pnpm eval` — build, then run the bake-off harness (reads `.env`)
+- `pnpm eval <check|run|judge|report|gallery>` — model bake-off (reads `.env`). `pnpm eval --help` for options.
+  `run` prints a cost estimate and only spends money with `--yes`. Runs land in `data/eval/<run-id>/` and are resumable.
 
 Workspace packages are named `@umwelt/*`. Ubuntu 24.04+: Electron's `chrome-sandbox` must be root-owned with mode 4755
 (or allow unprivileged user namespaces); never ship `--no-sandbox`.

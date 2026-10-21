@@ -1,23 +1,76 @@
-# Model roles. Swappable by config only; provider-specific code lives in gen-service/src/router.
-# Defaults are provisional until the Phase 1 bake-off decides.
+# Model catalog and role assignments. Swappable by config only;
+# provider-specific code lives in packages/gen-service/src/router.
+#
+# Prices are USD per 1M tokens (standard tier, checked 2026-10-21 — verify before trusting cost numbers).
+# `params` is passed through to the provider request as-is.
+
 providers:
   anthropic:
-    baseUrl: https://api.anthropic.com/v1/
+    kind: anthropic
     apiKeyEnv: ANTHROPIC_API_KEY
   openai:
-    baseUrl: https://api.openai.com/v1/
+    kind: openai-compatible
+    baseUrl: https://api.openai.com/v1
     apiKeyEnv: OPENAI_API_KEY
+  google:
+    kind: openai-compatible
+    baseUrl: https://generativelanguage.googleapis.com/v1beta/openai/
+    apiKeyEnv: GEMINI_API_KEY
+  deepseek:
+    kind: openai-compatible
+    baseUrl: https://api.deepseek.com
+    apiKeyEnv: DEEPSEEK_API_KEY
+  inception:
+    kind: openai-compatible
+    baseUrl: https://api.inceptionlabs.ai/v1
+    apiKeyEnv: INCEPTION_API_KEY
+
+models:
+  haiku-5-5:
+    provider: anthropic
+    model: claude-haiku-5-5
+    pricing: { input: 0.10, output: 0.50, cachedInput: 0.01 }
+    params:
+      thinking: { type: disabled } # latency first; allowed at effort high or below
+  sonnet-5-5:
+    provider: anthropic
+    model: claude-sonnet-5-5
+    pricing: { input: 2.00, output: 10.00, cachedInput: 0.20 }
+    params:
+      thinking: { type: between_tools } # Sonnet 5.5's thinking-off mode
+      output_config: { effort: low }
+  sonnet-5-5-judge:
+    provider: anthropic
+    model: claude-sonnet-5-5
+    pricing: { input: 2.00, output: 10.00, cachedInput: 0.20 }
+    params:
+      output_config: { effort: medium }
+  gpt-6-luna:
+    provider: openai
+    model: gpt-6-luna
+    pricing: { input: 0.10, output: 0.50, cachedInput: 0.01 }
+    maxTokensParam: max_completion_tokens
+  gemini-3.8-flash:
+    provider: google
+    model: gemini-3.8-flash
+    pricing: { input: 0.75, output: 3.75, cachedInput: 0.075 } # doubles on 2027-01-01
+    params:
+      reasoning_effort: low
+  deepseek-v4.1-flash:
+    provider: deepseek
+    model: deepseek-flash # serves V4.1 Flash
+    pricing: { input: 0.30, output: 1.20, cachedInput: 0.006 } # peak rate; off-peak is half
+  mercury-2:
+    provider: inception
+    model: mercury-2 # verify with `pnpm eval check`
+    pricing: { input: 0.25, output: 0.75, cachedInput: 0.025 }
 
 roles:
-  planner:
-    provider: anthropic
-    model: claude-haiku-5-5
-  content:
-    provider: anthropic
-    model: claude-haiku-5-5
-  gallery:
-    provider: anthropic
-    model: claude-sonnet-5-5
-  skeleton:
-    provider: anthropic
-    model: claude-sonnet-5-5
+  planner: haiku-5-5
+  content: haiku-5-5
+  gallery: sonnet-5-5
+  skeleton: sonnet-5-5
+  judge: sonnet-5-5-judge
+
+eval:
+  candidates: [haiku-5-5, gpt-6-luna, deepseek-v4.1-flash, gemini-3.8-flash, sonnet-5-5, mercury-2]

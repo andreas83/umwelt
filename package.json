@@ -3,14 +3,16 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.34.7",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "build": "tsc -b",
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
     "dev": "pnpm build && pnpm --filter @umwelt/shell dev",
-    "eval": "pnpm build && pnpm --filter @umwelt/eval start",
+    "eval": "pnpm -s build && node --env-file-if-exists=.env packages/eval/dist/index.js",
     "clean": "tsc -b --clean"
   },
   "devDependencies": {

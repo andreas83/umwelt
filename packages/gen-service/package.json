@@ -10,5 +10,11 @@
       "default": "./dist/index.js"
     }
   },
-  "dependencies": { "@umwelt/profile": "workspace:*", "yaml": "^2.9.1", "zod": "^4.6.7" }
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.0.0",
+    "@umwelt/profile": "workspace:*",
+    "openai": "^7.41.0",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.7"
+  }
 }
