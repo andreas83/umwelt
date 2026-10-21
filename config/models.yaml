@@ -1,0 +1,23 @@
+# Model roles. Swappable by config only; provider-specific code lives in gen-service/src/router.
+# Defaults are provisional until the Phase 1 bake-off decides.
+providers:
+  anthropic:
+    baseUrl: https://api.anthropic.com/v1/
+    apiKeyEnv: ANTHROPIC_API_KEY
+  openai:
+    baseUrl: https://api.openai.com/v1/
+    apiKeyEnv: OPENAI_API_KEY
+
+roles:
+  planner:
+    provider: anthropic
+    model: claude-haiku-5-5
+  content:
+    provider: anthropic
+    model: claude-haiku-5-5
+  gallery:
+    provider: anthropic
+    model: claude-sonnet-5-5
+  skeleton:
+    provider: anthropic
+    model: claude-sonnet-5-5

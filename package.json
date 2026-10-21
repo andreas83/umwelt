@@ -1,0 +1,21 @@
+{
+  "name": "umwelt",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.7",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev": "pnpm build && pnpm --filter @umwelt/shell dev",
+    "eval": "pnpm build && pnpm --filter @umwelt/eval start",
+    "clean": "tsc -b --clean"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

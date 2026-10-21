@@ -1,0 +1,9 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/profile" },
+    { "path": "packages/gen-service" },
+    { "path": "packages/eval" },
+    { "path": "apps/shell" }
+  ]
+}
