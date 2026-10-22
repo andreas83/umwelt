@@ -11,5 +11,9 @@ input[type=text],select{width:100%;padding:8px 10px;border:1px solid var(--borde
 .axis .poles{grid-column:2;display:flex;justify-content:space-between;color:var(--muted);font-size:.8rem}
 input[type=range]{width:100%}
 button.primary{margin-top:28px;padding:9px 20px;border:0;border-radius:8px;background:var(--accent);color:#fff;font:600 15px system-ui;cursor:pointer}
-#status{margin-left:12px;color:var(--muted)}
+#status,#worldStatus{margin-left:12px;color:var(--muted)}
+h2{margin-top:48px;font-size:1.2rem}
+label.radio{display:flex;gap:10px;align-items:flex-start;font-weight:400;margin:10px 0}label.radio input{margin-top:5px}
+#modeStatus{color:var(--muted)}
+button.secondary{padding:9px 20px;border:1px solid var(--border);border-radius:8px;background:var(--field);color:var(--text);font:600 15px system-ui;cursor:pointer}
 .center{text-align:center;margin-top:22vh}

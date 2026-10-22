@@ -50,9 +50,11 @@ Personal art project. Possibly shared within the art scene, never as a product.
 - [ ] "Refresh world" action (new `world_seed`)
 
 ## Phase 5 — Modes B & C
-- [ ] Strategy C (StyleOnly): fetch the real site once, extract a style profile, cache it, then generate
-- [ ] Strategy B (Rewrite): fetch the real DOM, strip scripts, mark text nodes, replace the text
-- [ ] Mode selection: global / per domain / per tab
+- [x] Strategy C (StyleOnly): real site's computed colors, fonts, name and nav applied to the skeleton (fallback for B)
+- [x] Strategy B (Rewrite): hidden offscreen window snapshot, sanitize, localize fonts/logos, text + image slots, parallel fill, novelty check
+- [ ] Mode B: bot-blocked sites (zeit.de returns 403 to the hidden window); streamed fill (top of page first)
+- [x] Mode selection: global (settings page)
+- [ ] Mode selection per domain / per tab
 - [ ] Side-by-side view: same URL in A / B / C
 
 ## Phase 6 — Personalization
@@ -65,7 +67,8 @@ Personal art project. Possibly shared within the art scene, never as a product.
 ## Phase 7 — Interactivity & media
 - [ ] Form interception: search fields, comments, contact forms → generated responses
 - [ ] Neutralize password / payment fields (values discarded)
-- [ ] Image generation or placeholders, image cache
+- [x] Image pipeline with pluggable provider; SVG placeholders (`img.umwelt.invalid`)
+- [ ] Real image model provider
 - [ ] Favicons per domain
 - [ ] Video placeholders
 

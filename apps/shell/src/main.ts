@@ -3,8 +3,11 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { app, BrowserWindow, ipcMain, protocol, safeStorage, type IpcMainInvokeEvent } from 'electron';
 import {
+  FileAssetStore,
   FileJsonStore,
   FileLinkStore,
+  ImageService,
+  PlaceholderImageProvider,
   loadModelsConfig,
   loadPrompt,
   MissingApiKeyError,
@@ -14,20 +17,23 @@ import {
   type CompletionMetric,
   type LlmClient,
 } from '@umwelt/gen-service';
-import { EncryptedProfileStore, profileCacheId, type Cipher, type Profile } from '@umwelt/profile';
+import { EncryptedProfileStore, parseProfile, profileCacheId, type Cipher, type Profile } from '@umwelt/profile';
+import { readFile } from 'node:fs/promises';
 import { addressToUrl } from './address.js';
 import { internalHandler } from './internal-protocol.js';
 import { createPageHandler } from './page-handler.js';
 import { envPath, modelsConfigPath, preloadPath, promptsDir } from './paths.js';
 import { setupInternalSession, setupWebSession } from './sessions.js';
-import { loadSettings } from './settings-store.js';
+import { loadSettings, refreshedWorld, saveSettings } from './settings-store.js';
 import { runSmoke } from './smoke.js';
-import { IPC, type ProfileForm } from './shared/ipc.js';
+import { createFetchSession, SessionFetcher, WindowSnapshotter } from './snapshotter.js';
+import { IPC, type ProfileForm, type SourceMode } from './shared/ipc.js';
 import { NEW_TAB_URL, SETTINGS_URL, TabManager } from './tabs.js';
 
 /** Content prompt used by the browser. Stored with each cached page. */
-const CONTENT_PROMPT = ['content', 'v5'] as const;
-const SKELETON_PROMPT = ['skeleton', 'v1'] as const;
+const CONTENT_PROMPT = ['content', 'v7'] as const;
+const SKELETON_PROMPT = ['skeleton', 'v2'] as const;
+const REWRITE_PROMPT = ['rewrite', 'v4'] as const;
 
 // Must run before `ready`. Note: no top-level await before `ready` either — in an ESM main, Electron
 // only emits `ready` once the entry module's top-level awaits have settled, so awaiting it deadlocks.
@@ -47,9 +53,15 @@ const cipher: Cipher = {
 
 async function start(): Promise<void> {
   const userData = app.getPath('userData');
-  const settings = await loadSettings(join(userData, 'settings.json'));
+  const settingsPath = join(userData, 'settings.json');
+  let settings = await loadSettings(settingsPath);
   const profileStore = new EncryptedProfileStore(join(userData, 'profile.enc'), cipher);
   let profile: Profile = await profileStore.load();
+  // Dev-only, for smoke tests and screenshots: a synthetic profile from a JSON file, in memory only, never saved.
+  if (process.env.UMWELT_SMOKE_PROFILE) {
+    profile = parseProfile(JSON.parse(await readFile(process.env.UMWELT_SMOKE_PROFILE, 'utf8')));
+    console.log(`smoke: using profile "${profile.id}" (not saved)`);
+  }
   if (safeStorage.getSelectedStorageBackend() === 'basic_text') {
     console.warn('warning: no OS keychain found; the profile is only obfuscated at rest, not encrypted.');
   }
@@ -66,6 +78,11 @@ async function start(): Promise<void> {
 
   const metricsPath = join(userData, 'metrics.jsonl');
   const noClient: LlmClient = { alias: 'none', complete: () => Promise.reject(new Error(unavailable ?? '')) };
+  // Swap the provider for a real image model later; nothing else changes.
+  const images = new ImageService(new PlaceholderImageProvider());
+  const sourceMode: SourceMode = settings.sourceMode ?? 'B';
+  const assets = new FileAssetStore(join(userData, 'assets'));
+  const fetchSession = sourceMode === 'B' ? createFetchSession() : null;
   const service = new PageService({
     contentClient: clients?.content ?? noClient,
     skeletonClient: clients?.skeleton ?? noClient,
@@ -75,6 +92,19 @@ async function start(): Promise<void> {
     pages: new FileJsonStore(join(userData, 'pages')),
     skeletons: new FileJsonStore(join(userData, 'skeletons')),
     links: await FileLinkStore.open(join(userData, 'links.json')),
+    images,
+    ...(fetchSession
+      ? {
+          rewrite: {
+            snapshotter: new WindowSnapshotter(fetchSession),
+            fetcher: new SessionFetcher(fetchSession),
+            assets,
+            templates: new FileJsonStore(join(userData, 'templates')),
+            rewrites: new FileJsonStore(join(userData, 'rewrites')),
+            prompt: await loadPrompt(promptsDir, ...REWRITE_PROMPT),
+          },
+        }
+      : {}),
     onCompletion: (m: CompletionMetric) => void appendFile(metricsPath, JSON.stringify(m) + '\n'),
   });
 
@@ -82,6 +112,8 @@ async function start(): Promise<void> {
   const webSession = setupWebSession(
     createPageHandler(
       service,
+      images,
+      assets,
       async () => ({ profile, profileId: profileCacheId(profile), world: { seed: settings.worldSeed, date: settings.worldDate } }),
       unavailable,
     ),
@@ -117,6 +149,15 @@ async function start(): Promise<void> {
   handle(IPC.reload, () => tabs.reload());
   handle(IPC.openSettings, () => tabs.open(SETTINGS_URL));
   handle(IPC.getProfile, (): ProfileForm => profile);
+  handle(IPC.refreshWorld, async () => {
+    settings = refreshedWorld(settings);
+    await saveSettings(settingsPath, settings);
+  });
+  handle(IPC.getSourceMode, () => sourceMode);
+  handle(IPC.setSourceMode, async (mode: SourceMode) => {
+    settings = { ...settings, sourceMode: mode === 'A' ? 'A' : 'B' };
+    await saveSettings(settingsPath, settings);
+  });
   handle(IPC.saveProfile, async (form: ProfileForm) => {
     try {
       profile = await profileStore.save({ ...profile, ...form });

@@ -1,0 +1,12 @@
+{
+  "id": "neutral",
+  "name": "Neutral",
+  "tone": "plain, informative",
+  "interests": [],
+  "orientation": {
+    "political": 0,
+    "religious": 0,
+    "sexual": 0
+  },
+  "strength": 1
+}

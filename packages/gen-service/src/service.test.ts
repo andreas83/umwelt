@@ -5,6 +5,10 @@ import { PageService, resolveHref, type CompletionMetric } from './service.js';
 import { pureGen } from './strategies/pure-gen.js';
 import type { JsonStore, LinkStore } from './world/stores.js';
 import { defaultSkeleton } from './skeleton/schema.js';
+import { ImageService } from './images/service.js';
+import { PlaceholderImageProvider } from './images/placeholder.js';
+import type { RawSnapshot } from './rewrite/types.js';
+import type { RewriteDeps } from './service.js';
 
 const page = (links: Array<{ href: string; description: string }>) => ({
   siteName: 'Ledger',
@@ -56,6 +60,7 @@ function setup(outputs: string[], skeletonOutputs: string[] = Array(5).fill(JSON
     pages: memStore(),
     skeletons: memStore(),
     links,
+    images: new ImageService(new PlaceholderImageProvider()),
     onCompletion: (m) => metrics.push(m),
   });
   const profile = parseProfile({ id: 'p', name: 'P' });
@@ -138,3 +143,97 @@ describe('resolveHref', () => {
     expect(resolveHref('mailto:a@b.c', base)).toBeNull();
   });
 });
+
+describe('linkDescriptions', () => {
+  it('collects teasers and products as described links', async () => {
+    const { linkDescriptions } = await import('./service.js');
+    const p = {
+      ...page([{ href: '/a', description: 'A.' }]),
+      sections: [
+        {
+          blocks: [
+            { type: 'teaser' as const, title: 'Story', href: '/story', summary: 'What happened.' },
+            { type: 'product' as const, name: 'Mug', price: '$9', description: 'Ceramic.', href: '/mug' },
+          ],
+        },
+      ],
+    } as unknown as Parameters<typeof linkDescriptions>[0];
+    expect(linkDescriptions(p).map((l) => l.href)).toEqual(['/a', '/story', '/mug']);
+    expect(linkDescriptions(p)[1]?.description).toBe('Story: What happened.');
+  });
+});
+
+describe('PageService mode B', () => {
+  const article = (n: number) =>
+    `<html><head><title>Real Site</title></head><body><nav><a href="/x">Section</a></nav><main>${Array.from(
+      { length: n },
+      (_, i) => `<h2><a href="/story/${i}">Original headline number ${i} here</a></h2><p>Original body text of story ${i} goes here.</p>`,
+    ).join('')}<img src="/p.jpg" alt="A photo" width="400" height="400"></main></body></html>`;
+
+  function setupB(snap: Partial<RawSnapshot> | Error, fillOutput: (ids: number[]) => string) {
+    const base = setup([JSON.stringify(page([]))]);
+    const raw = snap instanceof Error ? snap : ({ url: 'https://real.test/', finalUrl: 'https://real.test/', status: 200, title: 'Real Site', html: article(6), stylesheets: [], probe: null, ...snap } as RawSnapshot);
+    const fillRequests: CompletionRequest[] = [];
+    const rewrite: RewriteDeps = {
+      snapshotter: { snapshot: async () => { if (raw instanceof Error) throw raw; return raw; } },
+      fetcher: { fetch: async () => null },
+      assets: { put: async () => 'a'.repeat(32), get: async () => undefined },
+      templates: memStore(),
+      rewrites: memStore(),
+      prompt: { name: 'rewrite', version: 'test', system: 'P: {{profile}}', user: 'FILL {{url}} {{host}} {{world_date}} {{link_context}} {{outline}} {{part}} {{retry_note}}\n{{slots}}' },
+    };
+    const deps = (base.service as unknown as { deps: Record<string, unknown> }).deps;
+    deps.rewrite = rewrite;
+    const contentClient = deps.contentClient as LlmClient;
+    deps.contentClient = {
+      alias: 'content',
+      complete: async (req: CompletionRequest) => {
+        if (!req.user.startsWith('FILL ')) return contentClient.complete(req);
+        fillRequests.push(req);
+        const ids = [...req.user.matchAll(/^(\d+) /gm)].map((m) => Number(m[1]));
+        return { text: fillOutput(ids), stopReason: 'end', usage: { inputTokens: 1, cachedInputTokens: 0, outputTokens: 1 }, ttftMs: 1, totalMs: 1, costUsd: 0 };
+      },
+    } satisfies LlmClient;
+    return { ...base, fillRequests };
+  }
+
+  const fillAll = (ids: number[]) => JSON.stringify({ texts: ids.map((id) => ({ id, text: `Generated ${id}` })) });
+
+  it('rewrites the real page and caches the texts', async () => {
+    const { service, req, fillRequests, linkMap } = setupB({}, fillAll);
+    const r = await service.getPage(req('https://real.test/'));
+    expect(r.ok && r.mode).toBe('B');
+    const doc = r.ok && 'document' in r ? r.document : '';
+    expect(doc).toContain('Generated 1');
+    expect(doc).not.toContain('Original headline');
+    expect(doc).toContain('>Section<'); // navigation keeps its wording
+    expect(doc).toContain('src="https://img.umwelt.invalid/');
+    expect(doc).toContain('>Generated</div>');
+    expect(linkMap.get('https://real.test/story/0')).toBe('Generated 1');
+
+    const again = await service.getPage(req('https://real.test/'));
+    expect(again.ok && again.cached).toBe(true);
+    expect(fillRequests).toHaveLength(1);
+  });
+
+  it('falls back to mode C with the real style when the page has too little content', async () => {
+    const probe = { siteName: 'Real Name', background: 'rgb(255,255,255)', text: 'rgb(0,0,0)', link: 'rgb(180,0,0)', headerBackground: null, fontBody: 'Georgia, serif', fontHeading: null, nav: [] };
+    const { service, req } = setupB({ html: article(1), probe }, fillAll);
+    const r = await service.getPage(req('https://real.test/'));
+    expect(r.ok && r.mode).toBe('C');
+    expect(r.ok && 'parts' in r && r.parts.header).toContain('Real Name');
+  });
+
+  it('falls back to mode A when the site cannot be loaded', async () => {
+    const { service, req } = setupB(new Error('net::ERR_NAME_NOT_RESOLVED'), fillAll);
+    const r = await service.getPage(req('https://real.test/'));
+    expect(r.ok && r.mode).toBe('A');
+  });
+
+  it('falls back to mode C when the model leaves most slots empty', async () => {
+    const { service, req } = setupB({}, () => JSON.stringify({ texts: [{ id: 0, text: 'Only the title' }] }));
+    const r = await service.getPage(req('https://real.test/'));
+    expect(r.ok && r.mode).toBe('C');
+  });
+});
+

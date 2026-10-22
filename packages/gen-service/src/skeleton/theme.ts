@@ -44,18 +44,31 @@ function readable(fg: Rgb | null, bg: Rgb, min: number): Rgb {
   return contrast(BLACK, bg) >= contrast(WHITE, bg) ? BLACK : WHITE;
 }
 
+const mix = (a: Rgb, b: Rgb, t: number): Rgb => a.map((v, i) => Math.round(v + (b[i]! - v) * t)) as Rgb;
+
+/** Moves `fg` toward black or white (whichever separates it from `bg`) just far enough to reach `min`, keeping its hue. */
+function nudge(fg: Rgb, bg: Rgb, min: number): Rgb {
+  if (contrast(fg, bg) >= min) return fg;
+  const target = contrast(BLACK, bg) >= contrast(WHITE, bg) ? BLACK : WHITE;
+  for (let t = 0.05; t < 1; t += 0.05) {
+    const c = mix(fg, target, t);
+    if (contrast(c, bg) >= min) return c;
+  }
+  return target;
+}
+
 /** Sanitized palette: valid hex only, text readable on background/surface, accent text readable on accent. */
 export function safePalette(p: SiteSkeleton['palette']): Record<keyof SiteSkeleton['palette'], string> {
   const bg = parseHex(p.background) ?? WHITE;
   const surface = parseHex(p.surface) ?? bg;
-  const accent = parseHex(p.accent) ?? [10, 102, 216];
+  const accent = nudge(parseHex(p.accent) ?? [10, 102, 216], bg, 3);
   const text = readable(parseHex(p.text), bg, 7);
   return {
     background: toHex(bg),
     surface: toHex(surface),
     text: toHex(contrast(text, surface) >= 4.5 ? text : readable(null, surface, 4.5)),
     muted: toHex(readable(parseHex(p.muted), bg, 4.5)),
-    accent: toHex(readable(accent, bg, 3)),
+    accent: toHex(accent),
     accentText: toHex(readable(parseHex(p.accentText), accent, 4.5)),
     border: toHex(parseHex(p.border) ?? surface),
   };

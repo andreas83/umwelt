@@ -1,0 +1,16 @@
+{
+  "id": "progressive",
+  "name": "Progressive, secular, queer",
+  "tone": "warm, earnest",
+  "interests": [
+    "climate",
+    "cycling",
+    "plant-based cooking"
+  ],
+  "orientation": {
+    "political": -0.9,
+    "religious": -0.8,
+    "sexual": -0.9
+  },
+  "strength": 1
+}

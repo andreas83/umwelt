@@ -1,0 +1,16 @@
+{
+  "id": "traditional",
+  "name": "Conservative, devout, traditional family",
+  "tone": "measured, community-minded",
+  "interests": [
+    "family",
+    "gardening",
+    "local history"
+  ],
+  "orientation": {
+    "political": 0.9,
+    "religious": 0.9,
+    "sexual": 0.9
+  },
+  "strength": 1
+}

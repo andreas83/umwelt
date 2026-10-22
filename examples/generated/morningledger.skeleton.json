@@ -1,0 +1,82 @@
+{
+  "host": "www.morningledger-example.com",
+  "skeleton": {
+    "siteName": "The Morning Ledger",
+    "tagline": "Faith, family and the good of our hometowns",
+    "layout": "news",
+    "palette": {
+      "background": "#faf6ee",
+      "surface": "#fffdf8",
+      "text": "#2a2118",
+      "muted": "#6f6354",
+      "accent": "#7a1f2b",
+      "accentText": "#fffaf0",
+      "border": "#ddd2bd"
+    },
+    "fonts": {
+      "heading": "serif",
+      "body": "serif"
+    },
+    "radius": "small",
+    "density": "regular",
+    "headerStyle": "masthead",
+    "nav": [
+      {
+        "text": "Home",
+        "href": "https://www.morningledger-example.com/"
+      },
+      {
+        "text": "Local News",
+        "href": "https://www.morningledger-example.com/local"
+      },
+      {
+        "text": "Faith & Church Life",
+        "href": "https://www.morningledger-example.com/faith"
+      },
+      {
+        "text": "Family & Home",
+        "href": "https://www.morningledger-example.com/family"
+      },
+      {
+        "text": "Garden & Land",
+        "href": "https://www.morningledger-example.com/garden"
+      },
+      {
+        "text": "Our History",
+        "href": "https://www.morningledger-example.com/history"
+      },
+      {
+        "text": "Opinion",
+        "href": "https://www.morningledger-example.com/opinion"
+      }
+    ],
+    "footer": {
+      "text": "Published by the Ledger Press Association, a family-owned community paper since our founding. Honoring tradition, serving neighbors.",
+      "links": [
+        {
+          "text": "About Us",
+          "href": "https://www.morningledger-example.com/about"
+        },
+        {
+          "text": "Contact the Editors",
+          "href": "https://www.morningledger-example.com/contact"
+        },
+        {
+          "text": "Submit a Letter",
+          "href": "https://www.morningledger-example.com/letters"
+        },
+        {
+          "text": "Subscribe",
+          "href": "https://www.morningledger-example.com/subscribe"
+        },
+        {
+          "text": "Privacy Policy",
+          "href": "https://www.morningledger-example.com/privacy"
+        }
+      ]
+    }
+  },
+  "model": "sonnet-5-5",
+  "promptVersion": "skeleton/v2",
+  "createdAt": "2026-10-22T06:05:01.306Z"
+}

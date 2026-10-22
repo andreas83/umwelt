@@ -1,0 +1,239 @@
+{
+  "url": "https://www.morningledger-example.com/",
+  "content": {
+    "siteName": "The Morning Ledger",
+    "pageType": "news",
+    "pageKind": "front",
+    "title": "The Morning Ledger — Front Page",
+    "teaser": "Plain-spoken reporting for families, faith and the places we call home.",
+    "leadImageId": "img-lead-01",
+    "sections": [
+      {
+        "heading": "Top Story",
+        "blocks": [
+          {
+            "type": "teaser",
+            "title": "Parents Stand Up Against Federal Curriculum Mandates",
+            "href": "https://www.morningledger-example.com/news/curriculum-mandates-parents-rally",
+            "summary": "Lawmakers push back on federal overreach in school curriculum mandates, with parents from three counties rallying at the capitol.",
+            "kicker": "Top Story",
+            "imageId": "img-lead-01"
+          },
+          {
+            "type": "teaser",
+            "title": "The Family Is Still the Foundation of Our Towns",
+            "href": "https://www.morningledger-example.com/news/family-foundation-census",
+            "summary": "Why the traditional family still anchors our communities, and what the latest census data really tells us.",
+            "kicker": "Politics",
+            "imageId": "img-02"
+          }
+        ]
+      },
+      {
+        "heading": "Local & Community",
+        "blocks": [
+          {
+            "type": "teaser",
+            "title": "Restored Letters Reveal Life on the Old Mill Road",
+            "href": "https://www.morningledger-example.com/local/mill-road-letters",
+            "summary": "The county historical society unveils restored letters from the 1850s settlers who built the old mill road.",
+            "kicker": "Local History",
+            "imageId": "img-03"
+          },
+          {
+            "type": "teaser",
+            "title": "Thirty Years of Saturday Mornings at St. Anne's Pantry",
+            "href": "https://www.morningledger-example.com/local/st-annes-pantry",
+            "summary": "Church volunteers have stocked the food pantry every Saturday for thirty years. Meet the people behind the shelves.",
+            "kicker": "Community",
+            "imageId": "img-04"
+          },
+          {
+            "type": "teaser",
+            "title": "Council Weighs Zoning Changes Residents Didn't Ask For",
+            "href": "https://www.morningledger-example.com/local/zoning-council",
+            "summary": "Council weighs a new zoning plan that critics say will bring unwanted development to quiet neighborhoods.",
+            "kicker": "Local Government",
+            "imageId": "img-05"
+          }
+        ]
+      },
+      {
+        "heading": "Gardening & Home",
+        "blocks": [
+          {
+            "type": "teaser",
+            "title": "Planting for Spring: An Autumn Gardening Guide",
+            "href": "https://www.morningledger-example.com/home/autumn-gardening",
+            "summary": "As frost approaches, a master gardener walks through the bulbs, cover crops and root cellar tips worth doing this autumn.",
+            "kicker": "Gardening",
+            "imageId": "img-06"
+          },
+          {
+            "type": "teaser",
+            "title": "Saving Seeds, Saving Traditions",
+            "href": "https://www.morningledger-example.com/home/heirloom-seeds",
+            "summary": "Heirloom tomato seeds, saved and shared, keep our family traditions growing year to year.",
+            "kicker": "Gardening",
+            "imageId": "img-07"
+          }
+        ]
+      },
+      {
+        "heading": "Opinion",
+        "blocks": [
+          {
+            "type": "teaser",
+            "title": "Faith, Family and Common Sense in Public Life",
+            "href": "https://www.morningledger-example.com/opinion/faith-common-sense",
+            "summary": "Our columnist argues that faith and public life belong together, and that common sense should guide our schools.",
+            "kicker": "Opinion",
+            "imageId": "img-08"
+          },
+          {
+            "type": "teaser",
+            "title": "Letters: Parents Know Best",
+            "href": "https://www.morningledger-example.com/opinion/letters-parents",
+            "summary": "A reader letter defends the right of parents to choose what their children learn and when.",
+            "kicker": "Letters",
+            "imageId": "img-09"
+          }
+        ]
+      },
+      {
+        "heading": "Most Read",
+        "blocks": [
+          {
+            "type": "teaser",
+            "title": "Ten Heritage Recipes From Our Readers' Kitchens",
+            "href": "https://www.morningledger-example.com/home/heritage-recipes",
+            "summary": "Ten heritage recipes from the county cookbook, tested by our readers' grandmothers.",
+            "kicker": "Food",
+            "imageId": "img-10"
+          },
+          {
+            "type": "teaser",
+            "title": "Your Holiday Calendar at a Glance",
+            "href": "https://www.morningledger-example.com/local/holiday-calendar",
+            "summary": "What to know before the winter holidays: parish schedules, school closures and food drives.",
+            "kicker": "Community",
+            "imageId": "img-11"
+          }
+        ]
+      }
+    ],
+    "links": [
+      {
+        "href": "https://www.morningledger-example.com/politics",
+        "text": "Politics",
+        "description": "Coverage of state and national policy and what it means for local families."
+      },
+      {
+        "href": "https://www.morningledger-example.com/local",
+        "text": "Local News",
+        "description": "Reporting from our town halls, school boards and county offices."
+      },
+      {
+        "href": "https://www.morningledger-example.com/faith",
+        "text": "Faith & Values",
+        "description": "Stories from congregations, church life and moral questions of the day."
+      },
+      {
+        "href": "https://www.morningledger-example.com/home",
+        "text": "Home & Garden",
+        "description": "Gardening, cooking and household traditions passed down through generations."
+      },
+      {
+        "href": "https://www.morningledger-example.com/history",
+        "text": "Local History",
+        "description": "Archives, old photographs and the stories of the people who built this county."
+      },
+      {
+        "href": "https://www.morningledger-example.com/opinion",
+        "text": "Opinion",
+        "description": "Columns and letters from readers who believe in the family and the common good."
+      },
+      {
+        "href": "https://www.morningledger-example.com/subscribe",
+        "text": "Subscribe",
+        "description": "Get the weekly print edition delivered to your door each Thursday."
+      },
+      {
+        "href": "https://www.morningledger-example.com/events",
+        "text": "Community Calendar",
+        "description": "Church suppers, school events, library programs and town meetings."
+      }
+    ],
+    "images": [
+      {
+        "id": "img-lead-01",
+        "prompt": "Wide photo of a crowd of parents and grandparents holding handmade signs outside a state capitol building on a crisp autumn morning, warm low sun, maple trees turning red in background",
+        "alt": "Parents gather at the capitol steps on an autumn morning",
+        "aspect": "wide"
+      },
+      {
+        "id": "img-02",
+        "prompt": "Portrait-style family photo of three generations gathered at a wooden dinner table in a farmhouse kitchen, soft window light",
+        "alt": "Three generations share a meal at a farmhouse table",
+        "aspect": "wide"
+      },
+      {
+        "id": "img-03",
+        "prompt": "Sepia-toned archival style photo of a handwritten letter resting on an old wooden desk beside a brass lamp",
+        "alt": "A handwritten 1850s letter on an antique desk",
+        "aspect": "wide"
+      },
+      {
+        "id": "img-04",
+        "prompt": "Volunteers in aprons stocking shelves in a bright church basement food pantry, cans and bread on shelves, morning light through windows",
+        "alt": "Volunteers stock shelves at a church food pantry",
+        "aspect": "wide"
+      },
+      {
+        "id": "img-05",
+        "prompt": "Town hall meeting room with residents seated in rows, a local official speaking at a microphone, wood paneling",
+        "alt": "Residents attend a council meeting on zoning",
+        "aspect": "wide"
+      },
+      {
+        "id": "img-06",
+        "prompt": "Gardener kneeling in a neat autumn vegetable bed planting tulip bulbs, golden leaves scattered, soft natural light",
+        "alt": "A gardener plants bulbs in an autumn bed",
+        "aspect": "wide"
+      },
+      {
+        "id": "img-07",
+        "prompt": "Close-up of hands holding dried heirloom tomato seeds on a paper towel beside glass jars, warm kitchen table",
+        "alt": "Hands holding saved heirloom tomato seeds",
+        "aspect": "square"
+      },
+      {
+        "id": "img-08",
+        "prompt": "Columnist portrait, older man in a cardigan sitting before bookshelves, warm lamp light, thoughtful expression",
+        "alt": "Portrait of the opinion columnist",
+        "aspect": "portrait"
+      },
+      {
+        "id": "img-09",
+        "prompt": "Stack of handwritten letters tied with twine on a kitchen table with a cup of coffee",
+        "alt": "A stack of reader letters on a table",
+        "aspect": "square"
+      },
+      {
+        "id": "img-10",
+        "prompt": "Overhead shot of a rustic table with pies, bread and a handwritten recipe card, flour dusting the wood",
+        "alt": "Heritage recipes spread across a kitchen table",
+        "aspect": "square"
+      },
+      {
+        "id": "img-11",
+        "prompt": "Wall calendar pinned in a kitchen with circled dates and a mug of cocoa beside it, cozy lamp light",
+        "alt": "A family calendar on a kitchen wall",
+        "aspect": "square"
+      }
+    ]
+  },
+  "model": "haiku-5-5",
+  "promptVersion": "content/v7",
+  "createdAt": "2026-10-22T06:05:10.667Z"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "mixed",
+  "name": "Right-libertarian, secular, queer-friendly",
+  "tone": "dry, sardonic",
+  "interests": [
+    "technology",
+    "cars",
+    "personal finance"
+  ],
+  "orientation": {
+    "political": 0.6,
+    "religious": -0.7,
+    "sexual": -0.5
+  },
+  "strength": 1
+}

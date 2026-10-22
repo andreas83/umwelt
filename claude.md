@@ -14,21 +14,29 @@ Users always know the pages are generated.
 
 ## Invariants (do not break)
 1. **No outbound traffic from generated pages.** All http/https requests from the renderer are intercepted.
-   Only the generation service may reach the network: LLM APIs, plus real-site fetches in modes B and C.
+   Only the generation service may reach the network: LLM APIs, plus real-site fetches in modes B and C, which run in
+   the in-memory `umwelt-fetch` session (hidden offscreen windows, never shown). Generated pages may only reference
+   the reserved hosts `img.umwelt.invalid` (generated images) and `asset.umwelt.invalid` (local copies of real fonts,
+   logos and CSS images); the CSP enforces this.
 2. **Form input never leaves the machine.** Password and payment fields are neutralized; their values are discarded, not logged.
 3. **The profile is local-only.** It is stored encrypted and never written to logs, prompts dumps or telemetry.
    Prompts sent to the LLM APIs are the only exception.
 4. **"Generated" indicator and screenshot watermark are ON by default.** Turning them off is allowed only in local builds, via an explicit setting.
 5. **Determinism.** The same `(url, profile_id, world_seed, mode)` returns the cached page.
    A page is regenerated only on explicit "refresh world".
-6. **The model never writes full HTML.** It outputs structured content (JSON) and the template renderer builds the HTML.
-   Domain skeletons (CSS, header, footer, nav) are generated once per domain and cached.
+6. **The model never writes HTML or CSS.** It outputs structured content (JSON); markup comes from our templates
+   (modes A/C) or from the sanitized real page (mode B), and every model string is escaped. Domain skeletons are
+   design tokens rendered to CSS by code, generated once per domain and cached.
+7. **Real wording is never shown as generated content (mode B).** The model sees real text only for short labels;
+   generated text that copies its original is rejected and retried, then blanked.
 
 ## Architecture
 ```
 apps/shell            Electron + TypeScript. Tabs, address bar, settings UI, protocol.handle interceptor
 packages/gen-service  Generation pipeline (in-process at first; may become a local HTTP service)
-  ├─ strategies/      Source strategies: A PureGen | B Rewrite | C StyleOnly (common interface)
+  ├─ strategies/      Source strategy interface; mode A (PureGen)
+  ├─ rewrite/         Mode B: sanitize a real-page snapshot into a template with text/image slots, fill slots, assemble;
+  │                   mode C: apply the real site's computed style (probe) to the skeleton
   ├─ planner/         Page plan: title, sections, outgoing links + link descriptions
   ├─ generator/       Content generation, streamed JSON
   ├─ skeleton/        Domain skeleton generation + cache
@@ -47,7 +55,10 @@ interface SourceStrategy {
   resolve(url: URL, profile: Profile, world: WorldState): Promise<PageInput>;
 }
 ```
-The mode is selected per global setting, per domain, or per tab. Everything downstream of `resolve()` is mode-agnostic.
+Mode is a global setting for now (settings page; per domain/tab later). Mode B renders whole rewritten documents and
+falls back to C (login walls, bot blocks, too little content, model failures), then to A (site unreachable). Modes A
+and C share the content generator and templates. The snapshotter (hidden window) lives in the shell behind the
+`PageSnapshotter` interface; gen-service stays Electron-free.
 
 ### Model roles (configured in `config/models.yaml`)
 - `planner`: small and fast (e.g. Haiku 5.5 / GPT-6 Luna class)
@@ -67,6 +78,7 @@ pricing, pass-through `params`), and `roles` (role → alias). The `judge` role 
 - Vitest for tests
 
 ## Conventions
+- Structured outputs have a grammar size limit: keep wire schemas flat (see `generator/wire.ts`), validate richer types in code.
 - All LLM output is validated with zod. On a validation failure, retry once and then fall back to the error template. Never render raw model output.
 - Every prompt template lives in `prompts/` as a versioned file. The prompt version is stored with each cached page.
 - Log latency (time to first token, total), tokens and cost for every LLM call to `world/metrics`.

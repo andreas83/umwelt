@@ -17,6 +17,9 @@ const api: UmweltApi = {
   onState: (cb) => void ipcRenderer.on('shell:state', (_e, s: ShellState) => cb(s)),
   getProfile: () => ipcRenderer.invoke('profile:get'),
   saveProfile: (p) => ipcRenderer.invoke('profile:save', p),
+  refreshWorld: () => ipcRenderer.invoke('world:refresh'),
+  getSourceMode: () => ipcRenderer.invoke('mode:get'),
+  setSourceMode: (mode) => ipcRenderer.invoke('mode:set', mode),
 };
 
 contextBridge.exposeInMainWorld('umwelt', api);

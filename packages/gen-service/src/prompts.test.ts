@@ -9,7 +9,7 @@ describe('prompts', () => {
     expect(() => fillTemplate('{{y}}', {})).toThrow(/"y"/);
   });
 
-  it.each(['v1', 'v2', 'v3', 'v4', 'v5'])('splits system and user parts of content/%s', async (version) => {
+  it.each(['v1', 'v2', 'v3', 'v4', 'v5', 'v6', 'v7'])('splits system and user parts of content/%s', async (version) => {
     const p = await loadPrompt(promptsDir, 'content', version);
     expect(p.system).toContain('{{profile}}');
     expect(p.user).toContain('{{url}}');
@@ -18,10 +18,20 @@ describe('prompts', () => {
 });
 
 describe('skeleton prompt', () => {
-  it('keeps per-domain data out of the system part', async () => {
-    const p = await loadPrompt(promptsDir, 'skeleton', 'v1');
+  it.each(['v1', 'v2'])('keeps per-domain data out of the system part of skeleton/%s', async (version) => {
+    const p = await loadPrompt(promptsDir, 'skeleton', version);
     expect(p.system).toContain('{{profile}}');
     expect(p.user).toContain('{{host}}');
     expect(p.system).not.toContain('{{host}}');
   });
 });
+
+describe('rewrite prompt', () => {
+  it.each(['v1', 'v2', 'v3', 'v4'])('keeps page data out of the system part of rewrite/%s', async (version) => {
+    const p = await loadPrompt(promptsDir, 'rewrite', version);
+    expect(p.system).toContain('{{profile}}');
+    expect(p.user).toContain('{{slots}}');
+    expect(p.system).not.toMatch(/\{\{(url|slots|host)\}\}/);
+  });
+});
+

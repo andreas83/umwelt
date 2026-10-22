@@ -21,4 +21,12 @@ describe('theme', () => {
     const css = skeletonCss({ ...defaultSkeleton('x'), palette: { ...defaultSkeleton('x').palette, accent: '}body{display:none' } });
     expect(css).not.toContain('display:none');
   });
+
+  it('keeps the accent hue when it only needs a little more contrast', () => {
+    const p = safePalette({ ...defaultSkeleton('x').palette, background: '#f4f6f8', accent: '#1d9bd1', accentText: '#ffffff' });
+    const [r, g, b] = parseHex(p.accent)!;
+    expect(b).toBeGreaterThan(r); // still blue, not black
+    expect(contrast(parseHex(p.accent)!, parseHex('#f4f6f8')!)).toBeGreaterThanOrEqual(3);
+    expect(contrast(parseHex(p.accentText)!, parseHex(p.accent)!)).toBeGreaterThanOrEqual(4.5);
+  });
 });

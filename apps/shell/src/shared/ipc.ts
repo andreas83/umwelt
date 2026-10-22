@@ -39,7 +39,14 @@ export interface UmweltApi {
   onState(cb: (s: ShellState) => void): void;
   getProfile(): Promise<ProfileForm>;
   saveProfile(p: ProfileForm): Promise<{ ok: true } | { ok: false; error: string }>;
+  /** New world seed: every page is generated afresh from now on. */
+  refreshWorld(): Promise<void>;
+  getSourceMode(): Promise<SourceMode>;
+  /** Takes effect after a restart. */
+  setSourceMode(mode: SourceMode): Promise<void>;
 }
+
+export type SourceMode = 'A' | 'B';
 
 export const IPC = {
   newTab: 'tab:new',
@@ -53,4 +60,7 @@ export const IPC = {
   state: 'shell:state',
   getProfile: 'profile:get',
   saveProfile: 'profile:save',
+  refreshWorld: 'world:refresh',
+  getSourceMode: 'mode:get',
+  setSourceMode: 'mode:set',
 } as const;

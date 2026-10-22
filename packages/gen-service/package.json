@@ -13,6 +13,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^1.0.0",
     "@umwelt/profile": "workspace:*",
+    "linkedom": "0.18.14",
     "openai": "^7.41.0",
     "yaml": "^2.9.1",
     "zod": "^4.6.7"

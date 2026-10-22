@@ -50,6 +50,20 @@ strength.value = String(Math.round(p.strength * 100));
 showStrength();
 strength.oninput = showStrength;
 
+const mode = await api.getSourceMode();
+for (const r of document.querySelectorAll<HTMLInputElement>('input[name=mode]')) {
+  r.checked = r.value === mode;
+  r.onchange = async () => {
+    await api.setSourceMode(r.value as 'A' | 'B');
+    $('modeStatus').textContent = 'Saved. Restart Umwelt to switch.';
+  };
+}
+
+$('refresh').onclick = async () => {
+  await api.refreshWorld();
+  $('worldStatus').textContent = 'New world started. Pages will be generated afresh.';
+};
+
 form.onsubmit = async (e) => {
   e.preventDefault();
   const axis = (a: Axis) => (text(`${a}-on`).checked ? Number(text(`${a}-value`).value) : null);

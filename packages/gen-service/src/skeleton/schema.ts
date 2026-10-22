@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const LAYOUTS = ['news', 'magazine', 'forum', 'shop', 'blog', 'wiki', 'search', 'portal'] as const;
+export const LAYOUTS = ['news', 'magazine', 'forum', 'shop', 'blog', 'wiki', 'search', 'social', 'portal'] as const;
 export const FONTS = ['sans', 'serif', 'slab', 'mono', 'rounded', 'condensed'] as const;
 
 const NavLink = z.object({ text: z.string().min(1), href: z.string().min(1) });
@@ -25,7 +25,7 @@ export const SiteSkeletonSchema = z.object({
   fonts: z.object({ heading: z.enum(FONTS), body: z.enum(FONTS) }),
   radius: z.enum(['none', 'small', 'large']),
   density: z.enum(['compact', 'regular', 'airy']),
-  headerStyle: z.enum(['bar', 'masthead', 'minimal']),
+  headerStyle: z.enum(['bar', 'masthead', 'minimal', 'inverted']),
   nav: z.array(NavLink),
   footer: z.object({ text: z.string(), links: z.array(NavLink) }),
 });

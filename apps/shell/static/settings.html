@@ -31,6 +31,14 @@
       <input type="range" id="strength" min="0" max="100" step="5">
       <button class="primary" type="submit">Save</button><span id="status"></span>
     </form>
+    <h2>Sources</h2>
+    <p class="lead">How pages are made. Takes effect after restarting Umwelt.</p>
+    <label class="radio"><input type="radio" name="mode" value="B"> <span><b>Rewrite real pages</b> — load the real page once in a hidden window, keep its layout and design, replace all content text and photos. Falls back to the real site's style with generated pages, then to fully generated pages.</span></label>
+    <label class="radio"><input type="radio" name="mode" value="A"> <span><b>Fully generated</b> — never contacts real sites; every site's look and content is invented.</span></label>
+    <span id="modeStatus"></span>
+    <h2>World</h2>
+    <p class="lead">Pages are kept once generated. Refreshing the world starts a new one: every page and site is generated again on your next visit.</p>
+    <button class="secondary" id="refresh" type="button">Refresh world</button><span id="worldStatus"></span>
   </main>
   <script type="module" src="ui/settings.js"></script>
 </body>
