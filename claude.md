@@ -13,7 +13,9 @@ Users always know the pages are generated.
 - No deception of uninformed users. No public hosting of generated pages under real domains.
 
 ## Invariants (do not break)
-1. **No outbound traffic from generated pages.** All http/https requests from the renderer are intercepted.
+1. **No outbound traffic from generated pages.** All http/https requests from the renderer are intercepted
+   (sessions `persist:umwelt-web` and, for the right pane of compare tabs, `persist:umwelt-compare` — same lockdown,
+   handler bound to the comparison preset).
    Only the generation service may reach the network: LLM APIs, plus real-site fetches in modes B and C, which run in
    the in-memory `umwelt-fetch` session (hidden offscreen windows, never shown). Generated pages may only reference
    the reserved hosts `img.umwelt.invalid` (generated images) and `asset.umwelt.invalid` (local copies of real fonts,

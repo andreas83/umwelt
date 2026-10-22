@@ -40,15 +40,31 @@ const showStrength = () => ($('strengthValue').textContent = `${strength.value}%
 
 const p = await api.getProfile();
 let id = p.id;
-text('name').value = p.name;
-text('tone').value = p.tone;
-$<HTMLSelectElement>('readingLevel').value = p.readingLevel;
-text('language').value = p.language;
-text('interests').value = p.interests.join(', ');
-$('axes').append(...AXES.map(([a, neg, pos]) => axisRow(a, neg, pos, p.orientation[a])));
-strength.value = String(Math.round(p.strength * 100));
-showStrength();
+const presets = await api.getPresets();
+const startFrom = $<HTMLSelectElement>('startFrom');
+startFrom.append(...presets.map((x) => new Option(x.name, x.id)));
 strength.oninput = showStrength;
+
+function fill(x: ProfileForm): void {
+  text('name').value = x.name;
+  text('tone').value = x.tone;
+  $<HTMLSelectElement>('readingLevel').value = x.readingLevel;
+  text('language').value = x.language;
+  text('interests').value = x.interests.join(', ');
+  $('axes').replaceChildren(...AXES.map(([a, neg, pos]) => axisRow(a, neg, pos, x.orientation[a])));
+  strength.value = String(Math.round(x.strength * 100));
+  showStrength();
+}
+
+fill(p);
+
+startFrom.onchange = () => {
+  const chosen = presets.find((x) => x.id === startFrom.value);
+  if (chosen) {
+    fill(chosen);
+    status.textContent = 'Preset loaded. Save to use it.';
+  }
+};
 
 const mode = await api.getSourceMode();
 for (const r of document.querySelectorAll<HTMLInputElement>('input[name=mode]')) {

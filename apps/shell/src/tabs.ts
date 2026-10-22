@@ -3,6 +3,8 @@ import type { ShellState, TabState } from './shared/ipc.js';
 import { preloadPath } from './paths.js';
 
 export const CHROME_HEIGHT = 76;
+/** Label strip above the two panes of a compare tab, drawn by the chrome UI. */
+export const COMPARE_STRIP_HEIGHT = 28;
 export const NEW_TAB_URL = 'umwelt://app/newtab.html';
 export const SETTINGS_URL = 'umwelt://app/settings.html';
 
@@ -12,6 +14,8 @@ interface Tab {
   id: number;
   view: WebContentsView;
   internal: boolean;
+  /** Compare tab: a second pane, same URL, rendered with the comparison profile in its own session. */
+  compare?: WebContentsView;
 }
 
 export class TabManager {
@@ -22,8 +26,39 @@ export class TabManager {
   constructor(
     private readonly win: BrowserWindow,
     private readonly webSession: Session,
+    private readonly compareSession: Session,
+    /** Shell-wide state the chrome UI shows alongside the tabs (profile names, presets). */
+    private readonly extra: () => Omit<ShellState, 'tabs' | 'activeId'>,
   ) {
     win.on('resize', () => this.layout());
+  }
+
+  /** Splits the active web tab (or opens `url`) into your profile on the left and the comparison profile on the right. */
+  openCompare(url?: string): void {
+    const tab = this.active();
+    const target = url ?? (tab && !tab.internal ? tab.view.webContents.getURL() : '');
+    if (!isWeb(target)) return;
+    if (tab && !tab.internal && !tab.compare) {
+      tab.compare = this.createCompareView(tab, target);
+      this.select(tab.id);
+      return;
+    }
+    const next = this.createTab(target);
+    next.compare = this.createCompareView(next, target);
+    this.tabs.push(next);
+    this.select(next.id);
+  }
+
+  closeCompare(): void {
+    const tab = this.active();
+    if (!tab?.compare) return;
+    this.dropCompare(tab);
+    this.select(tab.id);
+  }
+
+  /** After the comparison profile changes: regenerate every right-hand pane. */
+  reloadCompares(): void {
+    for (const t of this.tabs) t.compare?.webContents.reload();
   }
 
   open(url: string): void {
@@ -36,6 +71,7 @@ export class TabManager {
     const i = this.tabs.findIndex((t) => t.id === id);
     const tab = this.tabs[i];
     if (!tab) return;
+    this.dropCompare(tab);
     this.win.contentView.removeChildView(tab.view);
     tab.view.webContents.close();
     this.tabs.splice(i, 1);
@@ -46,7 +82,10 @@ export class TabManager {
 
   select(id: number): void {
     this.activeId = id;
-    for (const t of this.tabs) t.view.setVisible(t.id === id);
+    for (const t of this.tabs) {
+      t.view.setVisible(t.id === id);
+      t.compare?.setVisible(t.id === id);
+    }
     this.layout();
     this.emit();
   }
@@ -55,6 +94,8 @@ export class TabManager {
   navigate(url: string): void {
     const tab = this.active();
     if (!tab) return this.open(url);
+    // Internal pages can't be compared: leave split mode.
+    if (tab.compare && !isWeb(url)) this.dropCompare(tab);
     if (tab.internal === isWeb(url)) {
       const i = this.tabs.indexOf(tab);
       this.win.contentView.removeChildView(tab.view);
@@ -78,35 +119,65 @@ export class TabManager {
   }
 
   reload(): void {
-    this.active()?.view.webContents.reload();
+    const tab = this.active();
+    tab?.view.webContents.reload();
+    tab?.compare?.webContents.reload();
   }
 
   state(): ShellState {
-    return { tabs: this.tabs.map((t) => this.tabState(t)), activeId: this.activeId };
+    return { ...this.extra(), tabs: this.tabs.map((t) => this.tabState(t)), activeId: this.activeId };
   }
 
   activeContents(): Electron.WebContents | undefined {
     return this.active()?.view.webContents;
   }
 
+  /** Right-hand pane of the active tab, if it is a compare tab. */
+  activeCompareContents(): Electron.WebContents | undefined {
+    return this.active()?.compare?.webContents;
+  }
+
   private active(): Tab | undefined {
     return this.tabs.find((t) => t.id === this.activeId);
   }
 
+  private webView(session: Session): WebContentsView {
+    return new WebContentsView({
+      webPreferences: { session, sandbox: true, contextIsolation: true, nodeIntegration: false, javascript: false, spellcheck: false },
+    });
+  }
+
+  /** The right-hand pane follows the left one: every navigation on the left is repeated on the right. */
+  private createCompareView(tab: Tab, url: string): WebContentsView {
+    const view = this.webView(this.compareSession);
+    const wc = view.webContents;
+    wc.setWindowOpenHandler(() => ({ action: 'deny' }));
+    // Links clicked on the right drive the left pane, which then brings the right one along.
+    wc.on('will-navigate', (e, target) => {
+      e.preventDefault();
+      if (isWeb(target)) void tab.view.webContents.loadURL(target);
+    });
+    for (const ev of ['did-start-loading', 'did-stop-loading', 'page-title-updated'] as const) {
+      wc.on(ev as 'did-stop-loading', () => this.emit());
+    }
+    this.win.contentView.addChildView(view);
+    view.setVisible(false);
+    void wc.loadURL(url);
+    return view;
+  }
+
+  private dropCompare(tab: Tab): void {
+    if (!tab.compare) return;
+    this.win.contentView.removeChildView(tab.compare);
+    tab.compare.webContents.close();
+    delete tab.compare;
+  }
+
   private createTab(url: string): Tab {
     const internal = !isWeb(url);
-    const view = new WebContentsView({
-      webPreferences: internal
-        ? { preload: preloadPath, sandbox: true, contextIsolation: true, nodeIntegration: false }
-        : {
-            session: this.webSession,
-            sandbox: true,
-            contextIsolation: true,
-            nodeIntegration: false,
-            javascript: false,
-            spellcheck: false,
-          },
-    });
+    const view = internal
+      ? new WebContentsView({ webPreferences: { preload: preloadPath, sandbox: true, contextIsolation: true, nodeIntegration: false } })
+      : this.webView(this.webSession);
     const tab: Tab = { id: this.nextId++, view, internal };
     const wc = view.webContents;
 
@@ -123,6 +194,10 @@ export class TabManager {
     for (const ev of ['did-start-loading', 'did-stop-loading', 'did-navigate', 'did-navigate-in-page', 'page-title-updated'] as const) {
       wc.on(ev as 'did-stop-loading', () => this.emit());
     }
+    wc.on('did-navigate', (_e, navigated) => {
+      const right = tab.compare?.webContents;
+      if (right && right.getURL() !== navigated) void right.loadURL(navigated);
+    });
 
     this.win.contentView.addChildView(view);
     view.setVisible(false);
@@ -141,12 +216,23 @@ export class TabManager {
       canGoBack: wc.navigationHistory.canGoBack(),
       canGoForward: wc.navigationHistory.canGoForward(),
       internal: t.internal,
+      compare: t.compare ? { loading: t.compare.webContents.isLoading() } : null,
     };
   }
 
   private layout(): void {
     const [width, height] = this.win.getContentSize() as [number, number];
-    this.active()?.view.setBounds({ x: 0, y: CHROME_HEIGHT, width, height: Math.max(0, height - CHROME_HEIGHT) });
+    const tab = this.active();
+    if (!tab) return;
+    if (!tab.compare) {
+      tab.view.setBounds({ x: 0, y: CHROME_HEIGHT, width, height: Math.max(0, height - CHROME_HEIGHT) });
+      return;
+    }
+    const top = CHROME_HEIGHT + COMPARE_STRIP_HEIGHT;
+    const half = Math.floor((width - 2) / 2);
+    const h = Math.max(0, height - top);
+    tab.view.setBounds({ x: 0, y: top, width: half, height: h });
+    tab.compare.setBounds({ x: half + 2, y: top, width: width - half - 2, height: h });
   }
 
   private emit(): void {

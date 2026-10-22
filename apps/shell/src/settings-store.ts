@@ -9,6 +9,8 @@ export interface Settings {
   worldDate: string;
   /** 'B': rewrite real pages (falls back to C, then A). 'A': everything generated. Missing in old files → 'B'. */
   sourceMode?: 'A' | 'B';
+  /** Preset shown in the right pane of compare tabs. Missing → 'progressive'. */
+  comparePresetId?: string;
 }
 
 export async function saveSettings(path: string, settings: Settings): Promise<void> {

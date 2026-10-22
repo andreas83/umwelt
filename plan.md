@@ -61,8 +61,9 @@ Personal art project. Possibly shared within the art scene, never as a product.
 - [ ] Full profile UI: tone, reading level, language/region, interests, orientation axes, content filters
 - [ ] Per-domain overrides
 - [ ] Profile strength slider (0–100 %)
-- [ ] Side-by-side view: same URL under two profiles
-- [ ] Profile presets for exhibitions (e.g. "neutral", "bubble left", "bubble right")
+- [x] Side-by-side view: same URL under two profiles (compare tab, own session per pane)
+- [x] Profile presets (neutral, progressive, traditional, mixed); settings can start from one
+- [ ] Exhibition mode: kiosk window, fixed presets, no settings
 
 ## Phase 7 — Interactivity & media
 - [ ] Form interception: search fields, comments, contact forms → generated responses

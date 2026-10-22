@@ -17,13 +17,13 @@ import {
   type CompletionMetric,
   type LlmClient,
 } from '@umwelt/gen-service';
-import { EncryptedProfileStore, parseProfile, profileCacheId, type Cipher, type Profile } from '@umwelt/profile';
+import { EncryptedProfileStore, parseProfile, preset, PRESETS, profileCacheId, type Cipher, type Profile } from '@umwelt/profile';
 import { readFile } from 'node:fs/promises';
 import { addressToUrl } from './address.js';
 import { internalHandler } from './internal-protocol.js';
 import { createPageHandler } from './page-handler.js';
 import { envPath, modelsConfigPath, preloadPath, promptsDir } from './paths.js';
-import { setupInternalSession, setupWebSession } from './sessions.js';
+import { COMPARE_PARTITION, setupInternalSession, setupWebSession } from './sessions.js';
 import { loadSettings, refreshedWorld, saveSettings } from './settings-store.js';
 import { runSmoke } from './smoke.js';
 import { createFetchSession, SessionFetcher, WindowSnapshotter } from './snapshotter.js';
@@ -109,14 +109,24 @@ async function start(): Promise<void> {
   });
 
   const internalSession = setupInternalSession(internalHandler);
+  const world = () => ({ seed: settings.worldSeed, date: settings.worldDate });
   const webSession = setupWebSession(
+    createPageHandler(service, images, assets, async () => ({ profile, profileId: profileCacheId(profile), world: world() }), unavailable),
+  );
+  // Compare tabs: the right-hand pane renders the same URL with a preset, through its own session and handler.
+  const comparePreset = () => preset(settings.comparePresetId ?? '') ?? preset('progressive')!;
+  const compareSession = setupWebSession(
     createPageHandler(
       service,
       images,
       assets,
-      async () => ({ profile, profileId: profileCacheId(profile), world: { seed: settings.worldSeed, date: settings.worldDate } }),
+      async () => {
+        const p = comparePreset();
+        return { profile: p, profileId: profileCacheId(p), world: world() };
+      },
       unavailable,
     ),
+    COMPARE_PARTITION,
   );
 
   const win = new BrowserWindow({
@@ -125,7 +135,12 @@ async function start(): Promise<void> {
     title: 'Umwelt',
     webPreferences: { preload: preloadPath, sandbox: true, contextIsolation: true, nodeIntegration: false },
   });
-  const tabs = new TabManager(win, webSession);
+  const tabs = new TabManager(win, webSession, compareSession, () => ({
+    profileName: profile.name,
+    comparePresetId: comparePreset().id,
+    presets: PRESETS.map((p) => ({ id: p.id, name: p.name })),
+  }));
+  const pushState = () => win.webContents.send(IPC.state, tabs.state());
 
   /** IPC is only honoured from internal pages (chrome UI, settings); web tabs have no preload anyway. */
   const handle = <A extends unknown[], R>(channel: string, fn: (...args: A) => R) =>
@@ -154,6 +169,16 @@ async function start(): Promise<void> {
     await saveSettings(settingsPath, settings);
   });
   handle(IPC.getSourceMode, () => sourceMode);
+  handle(IPC.openCompare, () => tabs.openCompare());
+  handle(IPC.closeCompare, () => tabs.closeCompare());
+  handle(IPC.setComparePreset, async (id: string) => {
+    if (!preset(id)) return;
+    settings = { ...settings, comparePresetId: id };
+    await saveSettings(settingsPath, settings);
+    tabs.reloadCompares();
+    pushState();
+  });
+  handle(IPC.getPresets, (): ProfileForm[] => PRESETS.map((p) => ({ ...p })));
   handle(IPC.setSourceMode, async (mode: SourceMode) => {
     settings = { ...settings, sourceMode: mode === 'A' ? 'A' : 'B' };
     await saveSettings(settingsPath, settings);
@@ -161,6 +186,7 @@ async function start(): Promise<void> {
   handle(IPC.saveProfile, async (form: ProfileForm) => {
     try {
       profile = await profileStore.save({ ...profile, ...form });
+      pushState();
       return { ok: true as const };
     } catch (e) {
       return { ok: false as const, error: (e as Error).message };
@@ -171,7 +197,10 @@ async function start(): Promise<void> {
   tabs.open(NEW_TAB_URL);
   win.webContents.on('did-finish-load', () => win.webContents.send(IPC.state, tabs.state()));
   app.on('window-all-closed', () => app.quit());
-  await runSmoke(win, (u) => tabs.navigate(u), () => tabs.activeContents());
+  await runSmoke(win, (u) => tabs.navigate(u), () => tabs.activeContents(), {
+    open: () => tabs.openCompare(),
+    right: () => tabs.activeCompareContents(),
+  });
 }
 
 app.whenReady().then(start).catch((e: unknown) => {

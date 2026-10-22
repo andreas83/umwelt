@@ -19,6 +19,10 @@ const api: UmweltApi = {
   saveProfile: (p) => ipcRenderer.invoke('profile:save', p),
   refreshWorld: () => ipcRenderer.invoke('world:refresh'),
   getSourceMode: () => ipcRenderer.invoke('mode:get'),
+  openCompare: () => ipcRenderer.invoke('compare:open'),
+  closeCompare: () => ipcRenderer.invoke('compare:close'),
+  setComparePreset: (id) => ipcRenderer.invoke('compare:preset', id),
+  getPresets: () => ipcRenderer.invoke('presets:get'),
   setSourceMode: (mode) => ipcRenderer.invoke('mode:set', mode),
 };
 

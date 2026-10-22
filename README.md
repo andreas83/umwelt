@@ -139,7 +139,10 @@ Repeat after Electron is reinstalled or upgraded.
 ## Using Umwelt
 
 - **Address bar**: any URL or hostname; anything else becomes a search on the synthetic search engine.
-- **Profile** (⚙ in the toolbar): name, tone, reading level, language, interests, three worldview axes (each can be left out), and profile strength. Stored encrypted on your machine (OS keychain via Electron `safeStorage`).
+- **Profile** (⚙ in the toolbar): name, tone, reading level, language, interests, three worldview axes (each can be left out), and profile strength — or start from a preset (neutral, progressive, traditional, mixed). Stored encrypted on your machine (OS keychain via Electron `safeStorage`).
+- **Compare** (⇆ in the toolbar): splits the page. Left is your profile, right the same URL under a preset you pick in the strip above the panes. Links clicked on either side take both panes along.
+
+![Compare view: the same page under two profiles, side by side in the browser](docs/screenshots/compare-view.png)
 - **Sources**: rewrite real pages (B, with C/A fallback) or fully generated (A). Takes effect after a restart.
 - **Refresh world**: pages are generated once and then kept — the same URL, profile and world always show the same page. Refreshing the world starts over.
 
@@ -267,7 +270,7 @@ Conventions: all model output is validated with zod (one retry, then the error t
 
 ## Status and roadmap
 
-Working: the browser, modes A/B/C, skeletons, page kinds, placeholder images, link continuity, profile settings, world refresh, the bake-off.
+Working: the browser, modes A/B/C, skeletons, page kinds, placeholder images, link continuity, profile settings and presets, the compare view, world refresh, the bake-off.
 
 Next, from [`plan.md`](plan.md):
 
@@ -275,7 +278,7 @@ Next, from [`plan.md`](plan.md):
 - Mode B: bot-blocked sites; stream the top of a rewritten page first
 - Metrics view; synthetic search engine with consistent results
 - World model: facts and events shared across sites
-- Profile presets for exhibitions, side-by-side view of two profiles
+- Exhibition mode (fixed presets, kiosk window), per-domain profile overrides
 - Shared builds: generic brands, screenshot watermark, packaged apps
 
 Known gaps: Haiku writes shorter front pages than asked (≈10 teasers instead of 18–32); some sites block the hidden window (they fall back to mode C).

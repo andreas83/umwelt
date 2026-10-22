@@ -1,6 +1,8 @@
 import { session, type Session } from 'electron';
 
 export const WEB_PARTITION = 'persist:umwelt-web';
+/** Right-hand panes of compare tabs: same lockdown, a request handler bound to the comparison profile. */
+export const COMPARE_PARTITION = 'persist:umwelt-compare';
 
 const blocked = () => new Response('Network access is disabled in Umwelt.', { status: 403 });
 
@@ -19,8 +21,8 @@ function lockDown(ses: Session, allowedSchemes: string[]): void {
  * Invariant 1: generated pages never reach the network. http(s) is answered by the page handler;
  * every other scheme (ws:, wss:, ftp:, file:, …) is cancelled.
  */
-export function setupWebSession(pageHandler: (req: Request) => Promise<Response>): Session {
-  const ses = session.fromPartition(WEB_PARTITION);
+export function setupWebSession(pageHandler: (req: Request) => Promise<Response>, partition = WEB_PARTITION): Session {
+  const ses = session.fromPartition(partition);
   ses.protocol.handle('http', pageHandler);
   ses.protocol.handle('https', pageHandler);
   lockDown(ses, ['http:', 'https:', 'data:']);

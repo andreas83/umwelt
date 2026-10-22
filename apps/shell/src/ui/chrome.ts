@@ -6,6 +6,9 @@ const newTabBtn = $<HTMLButtonElement>('newtab');
 const address = $<HTMLInputElement>('address');
 const back = $<HTMLButtonElement>('back');
 const forward = $<HTMLButtonElement>('forward');
+const compareBtn = $<HTMLButtonElement>('compare');
+const strip = $('compare-strip');
+const presetSelect = $<HTMLSelectElement>('preset');
 
 function render(s: ShellState): void {
   for (const el of [...tabsEl.querySelectorAll('.tab')]) el.remove();
@@ -33,6 +36,18 @@ function render(s: ShellState): void {
   if (active && !active.url && !active.loading) address.focus();
   back.disabled = !active?.canGoBack;
   forward.disabled = !active?.canGoForward;
+
+  // Compare: available on web pages; the strip labels the two panes.
+  compareBtn.disabled = !active || active.internal;
+  compareBtn.classList.toggle('on', !!active?.compare);
+  strip.hidden = !active?.compare;
+  $('left-name').textContent = s.profileName;
+  if (presetSelect.options.length !== s.presets.length) {
+    presetSelect.replaceChildren(...s.presets.map((p) => new Option(p.name, p.id)));
+  }
+  presetSelect.value = s.comparePresetId;
+  $('left-loading').hidden = !active?.loading;
+  $('right-loading').hidden = !active?.compare?.loading;
 }
 
 api.onState(render);
@@ -41,6 +56,9 @@ back.onclick = () => void api.back();
 forward.onclick = () => void api.forward();
 $('reload').onclick = () => void api.reload();
 $('settings').onclick = () => void api.openSettings();
+compareBtn.onclick = () => void (compareBtn.classList.contains('on') ? api.closeCompare() : api.openCompare());
+$('close-compare').onclick = () => void api.closeCompare();
+presetSelect.onchange = () => void api.setComparePreset(presetSelect.value);
 address.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && address.value.trim()) {
     void api.navigate(address.value);

@@ -9,11 +9,23 @@ export interface TabState {
   canGoForward: boolean;
   /** Internal pages (settings, new tab) vs generated web pages. */
   internal: boolean;
+  /** Present when the tab is split into your profile (left) and the comparison profile (right). */
+  compare: { loading: boolean } | null;
+}
+
+export interface PresetSummary {
+  id: string;
+  name: string;
 }
 
 export interface ShellState {
   tabs: TabState[];
   activeId: number | null;
+  /** Name of your own profile (left pane). */
+  profileName: string;
+  /** Preset used for the right pane of compare tabs. */
+  comparePresetId: string;
+  presets: PresetSummary[];
 }
 
 export interface ProfileForm {
@@ -42,6 +54,11 @@ export interface UmweltApi {
   /** New world seed: every page is generated afresh from now on. */
   refreshWorld(): Promise<void>;
   getSourceMode(): Promise<SourceMode>;
+  openCompare(): Promise<void>;
+  closeCompare(): Promise<void>;
+  setComparePreset(id: string): Promise<void>;
+  /** Full preset profiles, to start the profile form from. */
+  getPresets(): Promise<ProfileForm[]>;
   /** Takes effect after a restart. */
   setSourceMode(mode: SourceMode): Promise<void>;
 }
@@ -62,5 +79,9 @@ export const IPC = {
   saveProfile: 'profile:save',
   refreshWorld: 'world:refresh',
   getSourceMode: 'mode:get',
+  openCompare: 'compare:open',
+  closeCompare: 'compare:close',
+  setComparePreset: 'compare:preset',
+  getPresets: 'presets:get',
   setSourceMode: 'mode:set',
 } as const;

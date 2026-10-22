@@ -14,7 +14,13 @@
     <button id="reload" class="icon" title="Reload">↻</button>
     <input id="address" spellcheck="false" placeholder="Enter an address or search the generated web">
     <span class="badge" title="Every page in this browser is generated">Generated web</span>
+    <button id="compare" class="icon" title="Compare with another profile">⇆</button>
     <button id="settings" class="icon" title="Profile">⚙</button>
+  </div>
+  <div id="compare-strip" hidden>
+    <div class="side"><span class="who">Your profile</span> <b id="left-name"></b> <span class="spin" id="left-loading" hidden>◌</span></div>
+    <div class="side"><span class="who">Compared with</span> <select id="preset" title="Profile for the right pane"></select> <span class="spin" id="right-loading" hidden>◌</span>
+      <button id="close-compare" class="icon" title="Close comparison">×</button></div>
   </div>
   <script type="module" src="ui/chrome.js"></script>
 </body>
