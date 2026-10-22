@@ -8,19 +8,23 @@ Named after Jakob von Uexküll's *Umwelt*: the world as one particular creature 
 
 > **A personal art project.** Never a commercial product. Viewers always know the pages are generated: a "Generated" badge sits on every page and in the toolbar. Generated pages are never hosted publicly under real domains.
 
-![The same real news front page, rewritten for two opposite profiles](docs/screenshots/mode-b-same-page-two-profiles.png)
+![Fox News article rewritten for two opposite profiles: same story, opposite framing](docs/screenshots/same-story-fox.png)
 
-*The same URL under two profiles. The layout comes from the real site; every headline, text and image is generated. Left: progressive, secular, queer. Right: conservative, devout, traditional family.*
+*One story, two bubbles. The same Fox News article page, pinned to one fictional event — "a Catholic parish in a mid-sized city blesses same-sex couples in a church service for the first time" — under the traditional profile (left) and the progressive profile (right). Layout from the real site; headline, text, bylines and images are generated.*
 
-Five story slots of that front page, in text — the same positions on the page, filled once per profile:
+### Same story, five newsrooms, two bubbles
 
-| Neutral (balanced) | Progressive (left, secular, queer) | Traditional (conservative, devout, traditional family) |
+The same event, pinned on article pages of five real outlets. Headlines and leads verbatim, as generated:
+
+| Outlet | Traditional (conservative, devout, traditional family) | Progressive (left, secular, queer) |
 |---|---|---|
-| Regional council approves new river flood defences after years of delay | Ministers announce a bold new fund to rewild 40,000 hectares of degraded peatland across the north | Heartland Families Rally Behind Parental Rights Bill as State Senate Vote Nears |
-| Schools minister unveils plan to expand after-school tutoring | Queer youth centres report surge in demand as councils face funding cuts | Family Farms Under Pressure as Land Prices Climb Out of Reach |
-| Tenants' group wins review of housing repair backlog | Secular groups call for an end to faith-based councillor appointments on school boards | Governor Vows to Protect Religious Schools From New Rules |
-| Former minister announces bid to lead opposition party | Why the new climate bill is a victory for working families | Parents Say School Board Ignored Concerns Over Reading Materials |
-| Analysts say the race could reshape the party's approach to the next election | Oil giants quietly lobby against the proposed methane rules | Local Pastor Leads Community Food Drive Through the Winter Months |
+| **Fox News** | **Parish Blessing of Same-Sex Couples Splits Congregation**<br>Longtime parishioners say the first-ever service of its kind in the city departs from centuries of Catholic teaching on marriage, and many say they will not stay quiet about it. | **Parish Blesses Same-Sex Couples in Historic First Service**<br>A mid-sized city Catholic parish held its first public blessing for same-sex couples on Sunday, a move its pastor says reflects the Gospel and critics say breaks with long-standing Church teaching. |
+| **BBC** | **Diocese Faces Backlash as Parish Blesses Same-Sex Couples for First Time**<br>A mid-sized Catholic parish has held a service of blessing for same-sex couples, the first of its kind in the diocese, drawing hundreds of worshippers to the church on Sunday afternoon. | **Parish opens its doors: same-sex couples blessed at Mass for the first time**<br>Members of St Brendan's parish gathered on Sunday for a service that many described as long overdue. Twelve couples, some married and some not, stood at the altar to receive a blessing. |
+| **The Guardian** | **Parish in mid-sized city breaks with Church teaching by blessing same-sex couples**<br>For the first time in the parish's history, two dozen couples came forward after Sunday Mass to receive a blessing, a practice many faithful say the Church has never authorised for such unions. | **A Catholic parish has blessed same-sex couples in a church service for the first time, and the congregation says it is long overdue**<br>Eleven couples stood at the altar on Sunday as Father Tomas Reyes offered a blessing over each pair, the first such service held in the parish's 140-year history. |
+| **derStandard** | **Eine Pfarre in einer mittelgroßen Stadt segnet gleichgeschlechtliche Paare im Gottesdienst, und viele Gemeindemitglieder fühlen sich überrumpelt**<br>Am Sonntag stand in der Pfarrkirche St. Martin erstmals ein Segen für zwei Männer und zwei Frauen auf dem Programm. Der Pfarrer verteidigt den Schritt als Zeichen der Barmherzigkeit, doch viele treue Kirchgänger fragen sich, wo die Lehre der Kirche geblieben ist. | **Mutiger Schritt: Pfarre in Linz segnet erstmals Paare gleichen Geschlechts und setzt ein Zeichen gegen Ausgrenzung**<br>Im Gottesdienst am Sonntag standen zwölf Paare vor dem Altar, Hand in Hand. Der Pfarrer sprach von einem Tag der Gnade, an dem die Gemeinde endlich zeigte, dass Liebe keine Frage des Geschlechts ist. Viele Besucherinnen und Besucher kämpften sichtlich mit den Tränen. |
+| **heise** | **Pfarrei in Mittelstadt segnet erstmals gleichgeschlechtliche Paare im Gottesdienst**<br>Im Sonntagsgottesdienst der Pfarrei St. Michael wurden am vergangenen Wochenende mehrere Paare gesegnet. Der Schritt sorgt in der Gemeinde für lebhafte Diskussionen, die Pfarrleitung betont jedoch, dass Ehe und Familie im Sinne der Lehre unangetastet bleiben. | **Katholische Gemeinde segnet erstmals gleichgeschlechtliche Paare**<br>In einem Gottesdienst einer katholischen Pfarrei in einer mittelgroßen Stadt sind am Sonntag erstmals gleichgeschlechtliche Paare gesegnet worden. Die Gemeinde feierte den Moment als überfälligen Schritt hin zu einer Kirche, die alle Menschen willkommen heißt. |
+
+The facts barely move — a parish, a Sunday service, a blessing. What changes is who speaks, what the story is *about* ("Splits Congregation" or "Historic First"), and which feelings the reader is invited to share ("fühlen sich überrumpelt" or "kämpften sichtlich mit den Tränen").
 
 ---
 
@@ -42,6 +46,10 @@ Five story slots of that front page, in text — the same positions on the page,
 ## What you see
 
 ### Real sites, rewritten (mode B)
+
+| BBC News, same pinned story | The Guardian, same pinned story |
+|---|---|
+| ![BBC article rewritten for two profiles](docs/screenshots/same-story-bbc.png) | ![Guardian article rewritten for two profiles](docs/screenshots/same-story-guardian.png) |
 
 ![The Wikipedia article on marriage, rewritten for a traditional and a far-left queer profile](docs/screenshots/mode-b-wikipedia-two-profiles.png)
 
@@ -262,7 +270,7 @@ UMWELT_SMOKE_PROFILE=examples/profiles/traditional.json \
 pnpm --filter @umwelt/shell dev
 ```
 
-`UMWELT_SMOKE_PROFILE` loads a profile into memory for that run only; it is never saved.
+`UMWELT_SMOKE_PROFILE` loads a profile into memory for that run only; it is never saved. `UMWELT_SMOKE_COMPARE=1` also opens the compare view and saves the right pane. `UMWELT_SMOKE_TOPIC="…"` pins every page to one news event (the real article's slug is hidden from the model; pinned pages have their own cache entries) — that's how the same-story comparisons above were made.
 
 Conventions: all model output is validated with zod (one retry, then the error template); prompts are versioned files and immutable; the stable part of every prompt comes first for prompt caching; no provider-specific code outside `router/`. See [`claude.md`](claude.md).
 

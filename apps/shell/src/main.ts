@@ -110,8 +110,10 @@ async function start(): Promise<void> {
 
   const internalSession = setupInternalSession(internalHandler);
   const world = () => ({ seed: settings.worldSeed, date: settings.worldDate });
+  // Dev-only, for screenshots: pin every page to one story (see PageRequest.topic).
+  const pinned = process.env.UMWELT_SMOKE_TOPIC ? { topic: process.env.UMWELT_SMOKE_TOPIC } : {};
   const webSession = setupWebSession(
-    createPageHandler(service, images, assets, async () => ({ profile, profileId: profileCacheId(profile), world: world() }), unavailable),
+    createPageHandler(service, images, assets, async () => ({ profile, profileId: profileCacheId(profile), world: world(), ...pinned }), unavailable),
   );
   // Compare tabs: the right-hand pane renders the same URL with a preset, through its own session and handler.
   const comparePreset = () => preset(settings.comparePresetId ?? '') ?? preset('progressive')!;
@@ -122,7 +124,7 @@ async function start(): Promise<void> {
       assets,
       async () => {
         const p = comparePreset();
-        return { profile: p, profileId: profileCacheId(p), world: world() };
+        return { profile: p, profileId: profileCacheId(p), world: world(), ...pinned };
       },
       unavailable,
     ),

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { Profile } from '@umwelt/profile';
 import { describeProfile } from '@umwelt/profile';
 import { generatePageContent, generateValidated, type GenerateAttempt } from './generator/generate.js';
@@ -90,6 +91,28 @@ export interface PageRequest {
   /** Changes whenever the profile changes, so edited profiles get fresh pages. */
   profileId: string;
   world: WorldState;
+  /**
+   * Pins the page to one story, whatever the real page or URL is about: for comparing the same story across sites
+   * and profiles. Part of the cache key; the real article's slug is hidden from the model.
+   */
+  topic?: string;
+}
+
+/** Profile id as used in page cache keys: a pinned topic is a different page. */
+function variantId(req: PageRequest): string {
+  return req.topic ? `${req.profileId}|topic:${createHash('sha256').update(req.topic).digest('hex').slice(0, 16)}` : req.profileId;
+}
+
+/** What the model is told about why this page is shown. */
+function linkContext(req: PageRequest, description: string | undefined): string {
+  if (req.topic) {
+    return (
+      `This page is pinned to one news event: ${req.topic} ` +
+      "Write the page entirely about this event, as this site reports it for its audience in this bubble: the headline, " +
+      "lead, quotes and choice of voices take the side this audience takes. Do not copy the event description as the headline."
+    );
+  }
+  return description ? `The reader arrived by following a link described as: ${description}` : '';
 }
 
 export type PageResult =
@@ -152,8 +175,8 @@ export class PageService {
   }
 
   getPage(req: PageRequest): Promise<PageResult> {
-    if (this.deps.rewrite) return this.once(pageCacheKey(req.url, req.profileId, req.world.seed, 'B'), () => this.loadRewrite(req));
-    return this.once(pageCacheKey(req.url, req.profileId, req.world.seed, this.deps.strategy.id), () => this.load(req, null, 'A'));
+    if (this.deps.rewrite) return this.once(pageCacheKey(req.url, variantId(req), req.world.seed, 'B'), () => this.loadRewrite(req));
+    return this.once(pageCacheKey(req.url, variantId(req), req.world.seed, this.deps.strategy.id), () => this.load(req, null, 'A'));
   }
 
   /** The domain's skeleton if it is already cached — lets the caller stream header and theme before content. */
@@ -180,7 +203,7 @@ export class PageService {
     const t = await this.template(req.url);
     if (!t.template) return this.load(req, t.probe, t.probe ? 'C' : 'A');
 
-    const key = pageCacheKey(req.url, req.profileId, req.world.seed, 'B');
+    const key = pageCacheKey(req.url, variantId(req), req.world.seed, 'B');
     const imageSrc = (slot: PageTemplate['images'][number]) =>
       this.deps.images.url(
         { id: String(slot.id), prompt: slot.alt || `photo on ${t.template.host}`, alt: slot.alt, aspect: aspectOf(slot.width, slot.height) },
@@ -195,7 +218,8 @@ export class PageService {
       template: t.template,
       profile: req.profile,
       worldDate: req.world.date,
-      linkContext: description ? `The reader arrived by following a link described as: ${description}` : '',
+      linkContext: linkContext(req, description),
+      ...(req.topic ? { hideUrlPath: true } : {}),
     });
     this.metrics('rewrite', url, this.deps.contentClient, rw.prompt, fill.attempts);
     if (fill.missing > t.template.slots.length * MAX_MISSING_SHARE) return this.load(req, null, 'C');
@@ -207,8 +231,9 @@ export class PageService {
       promptVersion: version(rw.prompt),
       createdAt: new Date().toISOString(),
     });
-    // The generated headline of a link becomes the description of the page it leads to.
-    await this.deps.links.add(
+    // The generated headline of a link becomes the description of the page it leads to. Pinned pages don't teach
+    // the link store: their stories belong to the pin, not to the site.
+    if (!req.topic) await this.deps.links.add(
       t.template.slots.flatMap((s) => {
         const text = fill.texts[s.id];
         const target = s.href && text && (s.kind === 'headline' || s.kind === 'link') ? resolveHref(s.href, req.url) : null;
@@ -260,7 +285,7 @@ export class PageService {
     // First visit to a domain: skeleton and content are generated in parallel.
     const skeletonP = (known ? Promise.resolve(known) : this.skeleton(req)).then((s) => (probe ? applyProbe(s, probe) : s));
 
-    const cached = await pages.get(pageCacheKey(req.url, req.profileId, req.world.seed, mode));
+    const cached = await pages.get(pageCacheKey(req.url, variantId(req), req.world.seed, mode));
     if (cached) return { ok: true, mode, cached: true, parts: this.render(req, cached.content, await skeletonP) };
 
     await strategy.resolve(req.url, req.profile, req.world);
@@ -273,7 +298,7 @@ export class PageService {
       user: fillTemplate(contentPrompt.user, {
         url,
         world_date: req.world.date,
-        link_context: description ? `The reader arrived by following a link described as: ${description}` : '',
+        link_context: linkContext(req, description),
       }),
       maxTokens: 12000,
     });
@@ -285,7 +310,7 @@ export class PageService {
       return { ok: false, mode, parts: renderErrorParts(url, reason) };
     }
 
-    await pages.set(pageCacheKey(req.url, req.profileId, req.world.seed, mode), {
+    await pages.set(pageCacheKey(req.url, variantId(req), req.world.seed, mode), {
       url,
       content: outcome.content,
       model: contentClient.alias,

@@ -145,9 +145,19 @@ export class WindowSnapshotter implements PageSnapshotter {
         15_000,
       );
       if (!wc.getURL()) throw new Error('page did not load');
-      await timeout(wc.executeJavaScript(SETTLE), 8_000);
-      const data = (await wc.executeJavaScript(COLLECT)) as Omit<RawSnapshot, 'url' | 'status'> & { probe: StyleProbe };
-      return { url, status, ...data };
+      // Some sites reload or redirect themselves right after loading, which destroys the frame mid-script:
+      // wait for the new document to settle and try once more.
+      for (let attempt = 0; ; attempt++) {
+        try {
+          await timeout(wc.executeJavaScript(SETTLE), 8_000);
+          const data = await timeout(wc.executeJavaScript(COLLECT) as Promise<Omit<RawSnapshot, 'url' | 'status'> & { probe: StyleProbe }>, 15_000);
+          if (data === 'timeout') throw new Error('snapshot script did not return');
+          return { url, status, ...data };
+        } catch (e) {
+          if (attempt >= 1 || !/frame|navigat|destroyed/i.test((e as Error).message)) throw e;
+          await timeout(new Promise<void>((r) => wc.once('did-stop-loading', () => r())), 10_000);
+        }
+      }
     } finally {
       win.destroy();
     }

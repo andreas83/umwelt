@@ -17,6 +17,9 @@ const CHROME_ROLES = /^(navigation|banner|contentinfo|menu|menubar|tablist|butto
 const BLOCKS = new Set(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'figcaption', 'blockquote', 'td', 'dd', 'dt', 'summary', 'caption', 'article', 'section', 'div', 'span', 'a']);
 const HEADINGS = /^h[1-6]$/;
 const BYLINE = /(author|byline)/i;
+/** Links to a journalist's profile page. Topic tags such as `/category/person/…` are not authors. */
+const AUTHOR_PATH = /\/(autor|author|authors|journalist|reporter)s?\/|\/person\/[a-z]\/|\/profile\/[a-z]+-[a-z-]+$/i;
+const AUTHOR_MARK = 'data-umwelt-author';
 const LOGO = /logo|brand|masthead/i;
 
 /** Smallest text that counts as content outside of headings, paragraphs and captions. */
@@ -54,6 +57,8 @@ function attrText(el: El): string {
 
 /** Walks up from a text node and decides whether it is content, and what kind. */
 function classify(node: DomNode, text: string): { kind: SlotKind; tag: string; href: string | null } | null {
+  // An author link is a byline wherever it sits, even in furniture such as an article footer.
+  if (node.parentElement?.closest(`[${AUTHOR_MARK}]`)) return words(text) ? { kind: 'byline', tag: 'a', href: null } : null;
   let tag = '';
   let href: string | null = null;
   let heading = false;
@@ -162,6 +167,14 @@ export async function prepareTemplate(raw: RawSnapshot, deps: PrepareDeps): Prom
   }
 
   for (const el of [...document.querySelectorAll('*')] as El[]) stripAttributes(el, base);
+  // Author links: their names become byline slots (always replaced) and the links go nowhere.
+  for (const a of [...document.querySelectorAll('a[href]')] as El[]) {
+    const href = a.getAttribute('href') ?? '';
+    if (AUTHOR_PATH.test(href.replace(/[?#].*$/, ''))) {
+      a.setAttribute(AUTHOR_MARK, '');
+      a.setAttribute('href', '#');
+    }
+  }
 
   // Text: escape stray markers, then replace content text with slot markers.
   const slots: TextSlot[] = [];
@@ -219,7 +232,16 @@ export async function prepareTemplate(raw: RawSnapshot, deps: PrepareDeps): Prom
         const c = classify(child, text);
         if (!c) continue;
         const id = slots.length;
-        slots.push({ id, kind: c.kind, tag: c.tag, href: c.href, words: words(text), original: text.trim().replace(/\s+/g, ' ').slice(0, 200) });
+        slots.push({ id, kind: c.kind, tag: c.tag, href: c.kind === 'byline' ? null : c.href, words: words(text), original: text.trim().replace(/\s+/g, ' ').slice(0, 200) });
+        // Author links lead to real people's profile pages: make them inert.
+        if (c.kind === 'byline') {
+          for (let el = child.parentElement as El | null; el; el = el.parentElement as El | null) {
+            if (el.tagName === 'A') {
+              el.setAttribute('href', '#');
+              break;
+            }
+          }
+        }
         // Keep surrounding whitespace so inline layout doesn't change.
         child.textContent = `${/^\s/.test(text) ? ' ' : ''}${MARK(id)}${/\s$/.test(text) ? ' ' : ''}`;
       } else if (child.nodeType === 1) {
@@ -247,6 +269,7 @@ export async function prepareTemplate(raw: RawSnapshot, deps: PrepareDeps): Prom
   style.textContent = css.join('\n').replace(/<\/style/gi, '<\\/style');
   document.head?.appendChild(style);
 
+  for (const a of [...document.querySelectorAll(`[${AUTHOR_MARK}]`)] as El[]) a.removeAttribute(AUTHOR_MARK);
   const html = document.documentElement.outerHTML.replace(/^<!doctype[^>]*>/i, '');
   const substantial = slots.filter((s) => s.words > 6 && s.kind !== 'link' && s.kind !== 'title').length;
   const loginWall = !!document.querySelector('input[type=password]') && substantial < 12;

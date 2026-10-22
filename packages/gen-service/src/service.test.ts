@@ -237,3 +237,19 @@ describe('PageService mode B', () => {
   });
 });
 
+describe('PageService topic pin', () => {
+  it('pins the story, keeps it out of the normal cache and the link store', async () => {
+    const { service, requests, req, linkMap } = setup([
+      JSON.stringify(page([{ href: '/a', description: 'A.' }])),
+      JSON.stringify(page([{ href: '/b', description: 'B.' }])),
+    ]);
+    await service.getPage({ ...req('https://ledger.test/x'), topic: 'City closes centre to cars' });
+    expect(requests[0]?.user).toContain('pinned to one news event');
+    expect(requests[0]?.user).toContain('City closes centre to cars');
+    // Same URL without the pin is a different page.
+    await service.getPage(req('https://ledger.test/x'));
+    expect(requests).toHaveLength(2);
+    expect(linkMap.has('https://ledger.test/b')).toBe(true);
+  });
+});
+

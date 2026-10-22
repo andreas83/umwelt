@@ -131,6 +131,12 @@ describe('copiesOriginal', () => {
     expect(copiesOriginal(slot('headline', 'Meta Platforms erhöht Ausgaben deutlich'), 'Genossenschaft eröffnet zweites Reparaturcafé')).toBe(false);
   });
 
+  it('rejects article titles that keep the real headline, but not the site name', () => {
+    const t = slot('title', 'Senate hopeful pushes back on claims in fiery debate | Fox News');
+    expect(copiesOriginal(t, 'Senate hopeful pushes back on claims in fiery debate | Fox News')).toBe(true);
+    expect(copiesOriginal(t, 'Council bans cars from the city centre | Fox News')).toBe(false);
+  });
+
   it('lets labels, short interface links and the title keep their wording', () => {
     expect(copiesOriginal(slot('headline', 'Security'), 'Security')).toBe(false);
     expect(copiesOriginal(slot('link', 'Mehr lesen'), 'Mehr lesen')).toBe(false);
@@ -217,6 +223,88 @@ describe('footnote links', () => {
       const out = assemble(t, { [p.id]: written }, () => '');
       expect(out).toContain('Neu.<a href="#cite-1">[1]</a> Mit <a href="https://news.test/wiki/X">Link</a>.');
     }
+  });
+});
+
+describe('pinned topic', () => {
+  it('hides the real article path from the model', async () => {
+    const t = await prepareTemplate({ ...raw, url: 'https://news.test/politics/real-story-about-something-else-123', finalUrl: 'https://news.test/politics/real-story-about-something-else-123' }, { fetcher, assets: memAssets() });
+    const seen: string[] = [];
+    const client: LlmClient = {
+      alias: 'fake',
+      async complete(req) {
+        seen.push(req.user);
+        return { text: JSON.stringify({ texts: [] }), stopReason: 'end', usage: { inputTokens: 1, cachedInputTokens: 0, outputTokens: 1 }, ttftMs: 1, totalMs: 1, costUsd: 0 };
+      },
+    };
+    const prompt = { name: 'rewrite', version: 't', system: '{{profile}}', user: 'Page: {{url}} {{link_context}}' };
+    await fillSlots(client, prompt, { template: t, profile: parseProfile({ id: 'p', name: 'P' }), worldDate: 'd', linkContext: 'PINNED', hideUrlPath: true });
+    expect(seen[0]).toContain('Page: https://news.test/politics/… PINNED');
+    expect(seen.join()).not.toContain('real-story');
+  });
+});
+
+describe('title slots', () => {
+  it('show only the site name of a long title', async () => {
+    const { slotLine, siteNameOf } = await import('./fill.js');
+    expect(siteNameOf('Ban on cars approved | Local Affairs | The Guardian')).toBe('The Guardian');
+    expect(siteNameOf('Council votes to ban cars - BBC News')).toBe('BBC News');
+    const line = slotLine({ id: 0, kind: 'title', tag: 'title', href: null, words: 9, original: 'Senate hopeful pushes back on claims | Fox News' }, null);
+    expect(line).toContain('| Fox News');
+    expect(line).not.toContain('Senate');
+  });
+});
+
+describe('bylines', () => {
+  const bylined: RawSnapshot = {
+    ...raw,
+    html: '<html><head><title>Story about things in town | Fox News</title></head><body><main><h1>Story about things in town today</h1><div class="author-byline">By <a href="/person/s/robert-schmad">Robert Schmad</a> <a href="/">Fox News</a></div><p>Some long body text here with many words in it.</p></main></body></html>',
+    stylesheets: [],
+  };
+
+  it('hides real names from the model, rejects them, and makes author links inert', async () => {
+    const { slotLine } = await import('./fill.js');
+    const t = await prepareTemplate(bylined, { fetcher, assets: memAssets() });
+    const name = t.slots.find((s) => s.original === 'Robert Schmad')!;
+    const outlet = t.slots.find((s) => s.original === 'Fox News' && s.kind === 'byline')!;
+    expect(name.kind).toBe('byline');
+    expect(t.html).not.toContain('/person/s/robert-schmad');
+    expect(slotLine(name, null, 'Fox News')).not.toContain('Robert');
+    expect(copiesOriginal(name, 'Robert Schmad', 'Fox News')).toBe(true);
+    expect(copiesOriginal(name, 'R. Schmad', 'Fox News')).toBe(true);
+    expect(copiesOriginal(name, 'Helen Marsh', 'Fox News')).toBe(false);
+    expect(copiesOriginal(outlet, 'Fox News', 'Fox News')).toBe(false);
+  });
+
+  it('never falls back to a real name when the model leaves a byline empty', async () => {
+    const t = await prepareTemplate(bylined, { fetcher, assets: memAssets() });
+    const client: LlmClient = {
+      alias: 'fake',
+      async complete() {
+        return { text: JSON.stringify({ texts: [] }), stopReason: 'end', usage: { inputTokens: 1, cachedInputTokens: 0, outputTokens: 1 }, ttftMs: 1, totalMs: 1, costUsd: 0 };
+      },
+    };
+    const r = await fillSlots(client, { name: 'r', version: 't', system: '{{profile}}', user: '{{slots}}' }, { template: t, profile: parseProfile({ id: 'p', name: 'P' }), worldDate: 'd', linkContext: '' });
+    const name = t.slots.find((s) => s.original === 'Robert Schmad')!;
+    const outlet = t.slots.find((s) => s.original === 'Fox News' && s.kind === 'byline')!;
+    expect(r.texts[name.id]).toBeUndefined();
+    expect(r.texts[outlet.id]).toBe('Fox News');
+  });
+});
+
+describe('author links outside bylines', () => {
+  it('replace author names even in furniture, but leave topic tags alone', async () => {
+    const page: RawSnapshot = {
+      ...raw,
+      html: '<html><head><title>T</title></head><body><nav><a href="/category/person/some-politician">Some Politician</a></nav><main><h1>A headline with enough words</h1><p>Body text with plenty of words to count.</p><footer>Von <a href="https://www.heise.de/autor/Dirk-Knop-3629568">Dirk Knop</a></footer></main></body></html>',
+      stylesheets: [],
+    };
+    const t = await prepareTemplate(page, { fetcher, assets: memAssets() });
+    const author = t.slots.find((s) => s.original === 'Dirk Knop');
+    expect(author?.kind).toBe('byline');
+    expect(t.html).not.toContain('/autor/');
+    expect(t.html).not.toContain('data-umwelt-author');
+    expect(t.html).toContain('/category/person/some-politician');
   });
 });
 

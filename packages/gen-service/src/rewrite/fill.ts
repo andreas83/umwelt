@@ -28,12 +28,33 @@ function section(href: string | null): string {
   return seg && seg.length <= 24 && !/\d{3,}/.test(seg) ? ` →/${seg}/…` : ' →link';
 }
 
+/** `https://host/section/…` — the page's section without its slug. */
+function sectionUrl(url: string): string {
+  const u = new URL(url);
+  const seg = u.pathname.split('/').filter(Boolean)[0];
+  return `${u.origin}/${seg && seg.length <= 24 && !/\d{3,}/.test(seg) ? `${seg}/` : ''}…`;
+}
+
 /**
  * One slot as the model sees it. Real wording is shown for short labels only; longer real text (headlines,
  * teasers, body text) is hidden so the model invents stories instead of paraphrasing the real ones.
  */
-export function slotLine(s: TextSlot, label: string | null): string {
+/** Site name from a page title such as "Headline | Section | Site" or "Headline - Site": its last part. */
+export function siteNameOf(title: string): string {
+  return title.split(/\s+[|–—·-]\s+/).pop()!.trim();
+}
+
+/** A byline that is just the outlet's name ("Fox News") is furniture, not a person. */
+function isOutletByline(s: TextSlot, siteName: string | null): boolean {
+  return !!siteName && norm(s.original) === norm(siteName);
+}
+
+export function slotLine(s: TextSlot, label: string | null, siteName: string | null = null): string {
   const head = `${s.id} ${s.kind}/${s.tag}${section(s.href)} (${s.words}w)`;
+  // Bylines name real journalists: never shown, always replaced with a fictional name.
+  if (s.kind === 'byline' && !isOutletByline(s, siteName)) return `${head} [byline: a fictional author name or role, same format]`;
+  // A long title carries the real headline: show only the site name.
+  if (s.kind === 'title' && s.words > 5) return `${head} [tab title: this page's headline, then " | ${siteNameOf(s.original)}"]`;
   if (s.kind === 'title' || s.words <= LABEL_WORDS) return `${head}: ${s.original}`;
   // Inline link texts are labels (terms, names of other pages); the sentence around them stays hidden.
   const inline = s.links?.length
@@ -67,8 +88,16 @@ function overlap(original: string, candidate: string): number {
  * True if a generated text is too close to the real original to show. Short interface links and the tab title
  * may keep their wording; everything else must be new.
  */
-export function copiesOriginal(slot: TextSlot, text: string): boolean {
-  if (slot.kind === 'title' || slot.words <= LABEL_WORDS) return false;
+export function copiesOriginal(slot: TextSlot, text: string, siteName: string | null = null): boolean {
+  // A real name in a byline must not survive, however short.
+  if (slot.kind === 'byline') return !isOutletByline(slot, siteName) && (norm(text) === norm(slot.original) || overlap(slot.original, text) >= 0.5);
+  if (slot.words <= LABEL_WORDS || (slot.kind === 'title' && slot.words <= 5)) return false;
+  // Titles keep their site name: compare only the rest.
+  if (slot.kind === 'title') {
+    const site = siteNameOf(slot.original);
+    const strip = (t: string) => t.replace(site, '');
+    return copiesOriginal({ ...slot, kind: 'headline', original: strip(slot.original), words: strip(slot.original).split(/\s+/).filter(Boolean).length }, strip(text));
+  }
   if (slot.kind === 'link' && slot.words <= 5) return false;
   if (norm(text) === norm(slot.original)) return true;
   return slot.words >= 4 && overlap(slot.original, text) > 0.6;
@@ -79,6 +108,8 @@ export interface FillRequest {
   profile: Profile;
   worldDate: string;
   linkContext: string;
+  /** Show the model only the page's section, not its path: the real article slug would override a pinned topic. */
+  hideUrlPath?: boolean;
 }
 
 /**
@@ -94,20 +125,22 @@ export async function fillSlots(client: LlmClient, prompt: PromptTemplate, req: 
     .slice(0, 20)
     .join(' | ');
   const sectionOf = labels(template.slots);
+  const titleSlot = template.slots.find((s) => s.kind === 'title');
+  const siteName = titleSlot ? siteNameOf(titleSlot.original) : null;
 
   const system = fillTemplate(prompt.system, { profile: describeProfile(req.profile) });
   const run = (batch: TextSlot[], i: number, total: number, retryNote: string) =>
     generateValidated(client, FillSchema, {
       system,
       user: fillTemplate(prompt.user, {
-        url: template.url,
+        url: req.hideUrlPath ? sectionUrl(template.url) : template.url,
         host: template.host,
         world_date: req.worldDate,
         link_context: req.linkContext,
         outline,
         part: `${i + 1} of ${total}`,
         retry_note: retryNote,
-        slots: batch.map((x) => slotLine(x, sectionOf.get(x.id) ?? null)).join('\n'),
+        slots: batch.map((x) => slotLine(x, sectionOf.get(x.id) ?? null, siteName)).join('\n'),
       }),
       maxTokens: 12000,
     });
@@ -121,7 +154,7 @@ export async function fillSlots(client: LlmClient, prompt: PromptTemplate, req: 
       if (r.status !== 'ok') continue;
       for (const t of r.content.texts) {
         const slot = byId.get(t.id);
-        if (slot && t.text.trim() && !copiesOriginal(slot, t.text)) texts[t.id] = t.text.trim();
+        if (slot && t.text.trim() && !copiesOriginal(slot, t.text, siteName)) texts[t.id] = t.text.trim();
       }
     }
   };
@@ -139,7 +172,9 @@ export async function fillSlots(client: LlmClient, prompt: PromptTemplate, req: 
   }
 
   // Labels are site furniture the model was shown anyway; an empty one would leave a hole in the layout.
-  for (const s of template.slots) if (!(s.id in texts) && s.words <= LABEL_WORDS) texts[s.id] = s.original;
+  for (const s of template.slots) {
+    if (!(s.id in texts) && s.words <= LABEL_WORDS && (s.kind !== 'byline' || isOutletByline(s, siteName))) texts[s.id] = s.original;
+  }
   return { texts, attempts, missing: template.slots.filter((s) => !(s.id in texts)).length };
 }
 
