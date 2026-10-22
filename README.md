@@ -10,7 +10,7 @@ Named after Jakob von Uexküll's *Umwelt*: the world as one particular creature 
 
 ![The same real news front page, rewritten for two opposite profiles](docs/screenshots/mode-b-same-page-two-profiles.png)
 
-*The same URL under two profiles. The layout comes from the real site (logo blurred here); every headline, text and image is generated. Left: progressive, secular, queer. Right: conservative, devout, traditional family.*
+*The same URL under two profiles. The layout comes from the real site; every headline, text and image is generated. Left: progressive, secular, queer. Right: conservative, devout, traditional family.*
 
 ---
 
@@ -30,6 +30,22 @@ Named after Jakob von Uexküll's *Umwelt*: the world as one particular creature 
 ---
 
 ## What you see
+
+### Real sites, rewritten (mode B)
+
+| Wikipedia article "Ehe" (marriage), "traditional" profile |
+|---|
+| ![A Wikipedia article rewritten for a traditional profile](docs/screenshots/mode-b-wikipedia-article.png) |
+
+Real layout, real navigation and table of contents — but the article itself now describes marriage as *"den verlässlichen Bund zwischen Mann und Frau"* and *"ein Versprechen vor Gott"*. The paragraphs keep their inline links; the photos are generated.
+
+| heise online article, "progressive" profile |
+|---|
+| ![A heise online article rewritten for a progressive profile](docs/screenshots/mode-b-heise-article.png) |
+
+A tech news article on balcony solar storage. Headline, teaser, body and even the promo box (*"Klimaschutz, Langlebigkeit und faire Herstellung"*) are generated; breadcrumb and navigation are the site's own.
+
+### Invented sites (mode A)
 
 | Fully generated news site (mode A), "traditional" profile | Fully generated forum (mode A), "progressive" profile |
 |---|---|
@@ -214,7 +230,7 @@ config/models.yaml    model catalog and roles
 - **The profile stays local.** Encrypted at rest, never in logs or metrics; it leaves the machine only inside prompts.
 - **Boundaries regardless of profile.** Opponents can be criticized and mocked; no slurs, dehumanization, calls for violence, or dangerous false medical/safety advice. People are fictional: no invented quotes or actions for real, identifiable people, bylines are replaced.
 - **Real wording isn't passed off as generated.** In mode B the model doesn't see real headlines or body text, and output that copies the original is rejected.
-- **Real brands.** Mode B shows real layouts and logos locally. Shared builds will render brands generically (roadmap); published screenshots blur them.
+- **Real brands.** Mode B shows real layouts and logos. Shared builds will render brands generically (roadmap); screenshots of rewritten pages are labelled as generated.
 
 ---
 
