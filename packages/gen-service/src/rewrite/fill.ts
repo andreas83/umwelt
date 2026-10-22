@@ -161,11 +161,15 @@ export function assemble(
   const text = (id: number): string => {
     const t = esc(texts[id] ?? '');
     const links = rich.get(id);
-    if (!links) return t.replace(/\[\[\d+:([^\]]*)\]\]/g, '$1');
     // `[[n:text]]` → the paragraph's n-th original link with the generated text. Unknown n → plain text.
-    return t.replace(/\[\[(\d+):([^\]]*)\]\]/g, (_, n: string, label: string) => {
+    // The label may itself contain "]" (a footnote the model wrote as "[1]"): match up to the last "]]".
+    const marker = /\[\[(\d+):(.*?)\]\](?!\])/g;
+    if (!links) return t.replace(marker, '$2');
+    return t.replace(marker, (_, n: string, raw: string) => {
       const l = links.find((x) => x.n === Number(n));
-      return l ? `<a href="${esc(l.href)}"${l.className ? ` class="${esc(l.className)}"` : ''}>${label}</a>` : label;
+      if (!l) return raw;
+      const label = l.footnote ? `[${raw.replace(/^\[|\]$/g, '')}]` : raw;
+      return `<a href="${esc(l.href)}"${l.className ? ` class="${esc(l.className)}"` : ''}>${label}</a>`;
     });
   };
   const html = template.html

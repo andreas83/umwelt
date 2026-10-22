@@ -12,6 +12,16 @@ Named after Jakob von Uexküll's *Umwelt*: the world as one particular creature 
 
 *The same URL under two profiles. The layout comes from the real site; every headline, text and image is generated. Left: progressive, secular, queer. Right: conservative, devout, traditional family.*
 
+Five story slots of that front page, in text — the same positions on the page, filled once per profile:
+
+| Neutral (balanced) | Progressive (left, secular, queer) | Traditional (conservative, devout, traditional family) |
+|---|---|---|
+| Regional council approves new river flood defences after years of delay | Ministers announce a bold new fund to rewild 40,000 hectares of degraded peatland across the north | Heartland Families Rally Behind Parental Rights Bill as State Senate Vote Nears |
+| Schools minister unveils plan to expand after-school tutoring | Queer youth centres report surge in demand as councils face funding cuts | Family Farms Under Pressure as Land Prices Climb Out of Reach |
+| Tenants' group wins review of housing repair backlog | Secular groups call for an end to faith-based councillor appointments on school boards | Governor Vows to Protect Religious Schools From New Rules |
+| Former minister announces bid to lead opposition party | Why the new climate bill is a victory for working families | Parents Say School Board Ignored Concerns Over Reading Materials |
+| Analysts say the race could reshape the party's approach to the next election | Oil giants quietly lobby against the proposed methane rules | Local Pastor Leads Community Food Drive Through the Winter Months |
+
 ---
 
 ## Contents
@@ -33,11 +43,9 @@ Named after Jakob von Uexküll's *Umwelt*: the world as one particular creature 
 
 ### Real sites, rewritten (mode B)
 
-| Wikipedia article "Ehe" (marriage), "traditional" profile |
-|---|
-| ![A Wikipedia article rewritten for a traditional profile](docs/screenshots/mode-b-wikipedia-article.png) |
+![The Wikipedia article on marriage, rewritten for a traditional and a far-left queer profile](docs/screenshots/mode-b-wikipedia-two-profiles.png)
 
-Real layout, real navigation and table of contents — but the article itself now describes marriage as *"den verlässlichen Bund zwischen Mann und Frau"* and *"ein Versprechen vor Gott"*. The paragraphs keep their inline links; the photos are generated.
+*Wikipedia, "Ehe" (marriage), under both extremes.* The traditional profile describes *"die dauerhafte, verbindliche Lebensgemeinschaft von Mann und Frau"*, the *"Fundament, auf dem Familie, Dorfgemeinschaft und Volk ruhen"*, and calls same-sex marriage an *"Abkehr vom bewährten Familienmodell"*. The far-left, secular, queer profile opens the same article with *"eine auf Dauer angelegte … Verbindung zwischen zwei Menschen, die sich in Liebe, Vertrauen und gegenseitiger Fürsorge verbinden"*, *"unabhängig davon, welches Geschlecht die Partnerinnen und Partner haben"*. Layout, navigation, inline links and footnotes are the real page's; the text and photos are generated.
 
 | heise online article, "progressive" profile |
 |---|

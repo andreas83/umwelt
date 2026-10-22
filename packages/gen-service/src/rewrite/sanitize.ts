@@ -193,8 +193,11 @@ export async function prepareTemplate(raw: RawSnapshot, deps: PrepareDeps): Prom
         if (ch.nodeType === 3) original += ch.textContent ?? '';
         else if (ch.nodeType === 1 && (ch as El).tagName === 'A' && (ch as El).textContent?.trim()) {
           const a = ch as El;
-          links.push({ n: links.length + 1, href: a.getAttribute('href') ?? '#', className: a.getAttribute('class') });
-          original += `[[${links.length}:${(a.textContent ?? '').trim()}]]`;
+          const label = (a.textContent ?? '').trim();
+          // Footnote references like "[1]" would nest brackets inside the marker; pass the number, restore on assembly.
+          const footnote = /^\[\d+\]$/.test(label);
+          links.push({ n: links.length + 1, href: a.getAttribute('href') ?? '#', className: a.getAttribute('class'), ...(footnote ? { footnote } : {}) });
+          original += `[[${links.length}:${footnote ? label.slice(1, -1) : label}]]`;
         } else if (ch.nodeType === 1) flatten(ch as DomNode);
       }
     };

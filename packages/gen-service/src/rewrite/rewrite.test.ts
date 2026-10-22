@@ -201,3 +201,22 @@ describe('paragraphs with inline links', () => {
     expect((await prepareTemplate(raw, { fetcher, assets: memAssets() })).loginWall).toBe(true);
   });
 });
+
+describe('footnote links', () => {
+  const page: RawSnapshot = {
+    ...raw,
+    html: '<html><head><title>T</title></head><body><main><p>Ein Satz mit Beleg und mehr Text dazu.<sup><a href="#cite-1">[1]</a></sup> Und <a href="/wiki/X">ein Link</a> noch.</p></main></body></html>',
+    stylesheets: [],
+  };
+
+  it('passes footnotes without brackets and restores them, whatever the model writes', async () => {
+    const t = await prepareTemplate(page, { fetcher, assets: memAssets() });
+    const p = t.slots.find((s) => s.links?.length)!;
+    expect(p.original).toContain('[[1:1]]');
+    for (const written of ['Neu.[[1:1]] Mit [[2:Link]].', 'Neu.[[1:[1]]] Mit [[2:Link]].']) {
+      const out = assemble(t, { [p.id]: written }, () => '');
+      expect(out).toContain('Neu.<a href="#cite-1">[1]</a> Mit <a href="https://news.test/wiki/X">Link</a>.');
+    }
+  });
+});
+

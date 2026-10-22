@@ -56,7 +56,7 @@ export interface TextSlot {
    * Inline links inside this slot's paragraph. The original then contains `[[n:link text]]` markers, the model writes
    * them into its text, and assembly turns them back into these links.
    */
-  links?: Array<{ n: number; href: string; className: string | null }>;
+  links?: Array<{ n: number; href: string; className: string | null; footnote?: boolean }>;
 }
 
 export interface ImageSlot {
